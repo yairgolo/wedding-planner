@@ -1,41 +1,29 @@
 # Changelog
 
-## 0.4.0 — Sprint 4 Seating
+## 0.5.0 — Sprint 5: Shopping & Budget
 
-- Added visual seating management with table capacity tracking.
-- Added drag-and-drop guest assignment on desktop.
-- Added mobile quick assignment controls.
-- Added table creation, editing and guarded deletion.
-- Added capacity validation and table-to-table moves.
-- Added event-day guest lookup with large table numbers.
-- Added styled Excel export for seating and unseated guests.
-- Added dashboard seating metrics and audit events.
-- Included the Sprint 3 HTTPS / Cloudflare mixed-content fix.
-- Added automated seating tests.
+- Added full shopping management for wedding, home, clothing, gifts and general purchases.
+- Added wishlist, priorities, due dates, store/product links and purchase completion flow.
+- Added styled Excel exports and WhatsApp-ready text exports for shopping.
+- Added budget target, expense commitments, paid amounts, balances and payment deadlines.
+- Added automatic partial/paid status normalization and overdue indicators.
+- Added styled Excel exports and WhatsApp-ready budget summaries.
+- Connected purchased shopping items to the budget overview.
+- Updated the dashboard and mobile navigation.
+- Added automated tests for shopping and budget flows.
 
-## 0.3.0 — Sprint 3 Invitations & WhatsApp
+## 0.4.0 — Sprint 4: Seating
 
-- Added a central invitation management page.
-- Added secure invitation image upload and normalization with Pillow.
-- Added customizable invitation text templates with guest-specific variables.
-- Added iPhone-compatible Web Share flow for image + text + RSVP URL.
-- Added invitation and reminder tracking per guest.
-- Added copy-to-clipboard fallback for invitation text.
-- Added invitation image to the public RSVP page.
-- Added invitation filters and delivery statistics.
+- Added visual seating management and event-day search.
 
-## 0.2.0 — Sprint 2 Guests & RSVP
+## 0.3.0 — Sprint 3: Invitations
 
-- Guest and family management.
-- Public personal RSVP links.
-- Search, filters, dashboard metrics and Excel export.
-- Soft deletion and audit log foundation.
+- Added invitation image, WhatsApp sharing and invitation tracking.
 
-## 0.1.1 — Foundation fixes
+## 0.2.0 — Sprint 2: Guests & RSVP
 
-- Fixed SQLite path handling.
-- Fixed CSRF timeout type.
+- Added guests, families, RSVP and guest Excel export.
 
-## 0.1.0 — Sprint 1 Foundation
+## 0.1.0 — Sprint 1: Foundation
 
-- Modular Flask architecture, authentication, SQLAlchemy, responsive RTL UI and Docker.
+- Added the modular Flask foundation, authentication, Docker and responsive RTL UI.

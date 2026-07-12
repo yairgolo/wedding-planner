@@ -28,6 +28,13 @@ class Wedding(db.Model):
     seating_tables = db.relationship(
         "SeatingTable", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
     )
+
+    shopping_items = db.relationship(
+        "ShoppingItem", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
+    budget_items = db.relationship(
+        "BudgetItem", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
     invitation_settings = db.relationship(
         "InvitationSettings",
         back_populates="wedding",

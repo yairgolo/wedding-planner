@@ -53,11 +53,13 @@ def create_app(config_name: str | None = None) -> Flask:
         )
 
     from .auth.routes import auth_bp
+    from .budget.routes import budget_bp
     from .core.errors import errors_bp
     from .dashboard.routes import dashboard_bp
     from .guests.routes import guests_bp, rsvp_bp
     from .invitations.routes import invitations_bp
     from .seating.routes import seating_bp
+    from .shopping.routes import shopping_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -65,16 +67,20 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(rsvp_bp)
     app.register_blueprint(invitations_bp)
     app.register_blueprint(seating_bp)
+    app.register_blueprint(shopping_bp)
+    app.register_blueprint(budget_bp)
     app.register_blueprint(errors_bp)
 
     from .models import (  # noqa: F401
         AuditLog,
+        BudgetItem,
         Family,
         Guest,
         InvitationActivity,
         InvitationSettings,
         SeatingAssignment,
         SeatingTable,
+        ShoppingItem,
         User,
         Wedding,
     )

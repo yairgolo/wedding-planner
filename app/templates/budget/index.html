@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}תקציב | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header budget-page-header">
+  <div><p class="eyebrow">Sprint 5</p><h1>תקציב ותשלומים</h1><p class="muted">תכנון, התחייבויות, תשלומים קרובים ומה באמת נשאר.</p></div>
+  <div class="header-actions">
+    <a class="secondary-button inline" href="{{ url_for('budget.share_text') }}">📱 שיתוף סיכום</a>
+    <a class="secondary-button inline" href="{{ url_for('budget.export_excel') }}">📊 ייצוא Excel</a>
+    <a class="primary-button inline" href="{{ url_for('budget.create') }}">＋ הוצאה חדשה</a>
+  </div>
+</section>
+
+<section class="budget-hero panel">
+  <div class="budget-progress-wrap">
+    <div class="budget-ring" style="--progress: {{ stats.percent }}"><div><strong>{{ stats.percent }}%</strong><small>מהיעד</small></div></div>
+    <div><p class="eyebrow">תמונה מלאה</p><h2>₪{{ '{:,.0f}'.format(stats.total|float) }} מתוך ₪{{ '{:,.0f}'.format(stats.target|float) }}</h2><p class="muted">כולל רכישות שכבר נקנו: ₪{{ '{:,.0f}'.format(stats.shopping|float) }}</p></div>
+  </div>
+  <form method="post" class="budget-target-form">
+    {{ target_form.hidden_tag() }}
+    <label>{{ target_form.budget_target.label }}{{ target_form.budget_target(step="0.01", min="0") }}</label>
+    {{ target_form.submit(class="secondary-button inline") }}
+  </form>
+</section>
+
+<section class="guest-stats budget-stats">
+  <article><small>התחייבויות</small><strong>₪{{ '{:,.0f}'.format(stats.committed|float) }}</strong><span>ספקים והוצאות</span></article>
+  <article><small>שולם</small><strong>₪{{ '{:,.0f}'.format(stats.paid|float) }}</strong><span>עד היום</span></article>
+  <article><small>נותר לתשלום</small><strong>₪{{ '{:,.0f}'.format(stats.balance|float) }}</strong><span>התחייבויות פתוחות</span></article>
+  <article class="{% if stats.remaining < 0 %}danger-stat{% endif %}"><small>{% if stats.remaining >= 0 %}נותר בתקציב{% else %}חריגה מהתקציב{% endif %}</small><strong>₪{{ '{:,.0f}'.format((stats.remaining if stats.remaining >= 0 else -stats.remaining)|float) }}</strong><span>{{ stats.overdue }} תשלומים באיחור</span></article>
+</section>
+
+<section class="panel budget-toolbar">
+  <form method="get" class="filter-bar budget-filter-bar">
+    <input type="search" name="q" value="{{ q }}" placeholder="חיפוש הוצאה, ספק או הערה">
+    <select name="category"><option value="">כל הקטגוריות</option>{% for key,label in category_labels.items() %}<option value="{{ key }}" {% if request.args.get('category') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="status"><option value="">כל הסטטוסים</option>{% for key,label in status_labels.items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button class="primary-button inline" type="submit">סינון</button>
+    <a class="text-button" href="{{ url_for('budget.index') }}">נקה</a>
+  </form>
+</section>
+
+<section class="budget-list">
+  {% for item in items %}
+  <article class="budget-card {% if item.status == 'paid' %}paid{% endif %} {% if item.is_overdue %}overdue{% endif %}">
+    <div class="budget-card-main">
+      <div class="shopping-badges"><span class="status-badge {{ item.status }}">{{ status_labels.get(item.status,item.status) }}</span><span class="category-chip">{{ category_labels.get(item.category,item.category) }}</span>{% if item.is_overdue %}<span class="danger-chip">באיחור</span>{% endif %}</div>
+      <h3>{{ item.name }}</h3>
+      <p class="muted small-text">{% if item.supplier_name %}{{ item.supplier_name }}{% endif %}{% if item.due_date %} · תשלום הבא {{ item.due_date.strftime('%d/%m/%Y') }}{% endif %}</p>
+      {% if item.notes %}<p class="shopping-notes">{{ item.notes }}</p>{% endif %}
+    </div>
+    <div class="budget-amounts">
+      <div><small>מחויבות</small><strong>₪{{ '{:,.0f}'.format(item.committed_amount|float) }}</strong></div>
+      <div><small>שולם</small><strong>₪{{ '{:,.0f}'.format((item.paid_amount or 0)|float) }}</strong></div>
+      <div><small>נותר</small><strong>₪{{ '{:,.0f}'.format(item.balance|float) }}</strong></div>
+    </div>
+    <div class="shopping-actions">
+      {% if item.balance > 0 %}<form method="post" action="{{ url_for('budget.mark_paid', item_id=item.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" title="סמן כשולם">✓</button></form>{% endif %}
+      <a href="{{ url_for('budget.edit', item_id=item.id) }}" aria-label="עריכה">✏️</a>
+      <form method="post" action="{{ url_for('budget.delete', item_id=item.id) }}" onsubmit="return confirm('להעביר את ההוצאה לסל המחזור?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">🗑️</button></form>
+    </div>
+  </article>
+  {% else %}
+  <div class="panel empty-state"><span>💰</span><h3>עדיין אין הוצאות</h3><p>הוסיפו את ההוצאה הראשונה כדי להתחיל לעקוב אחרי התקציב.</p><a class="primary-button inline" href="{{ url_for('budget.create') }}">הוספת הוצאה</a></div>
+  {% endfor %}
+</section>
+<a class="floating-add" href="{{ url_for('budget.create') }}">＋</a>
+{% endblock %}

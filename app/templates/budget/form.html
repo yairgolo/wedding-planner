@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">תקציב</p><h1>{{ title }}</h1><p class="muted">הכניסו סכומים מתוכננים, בפועל ומה כבר שולם.</p></div></section>
+<section class="panel form-panel">
+  <form method="post" class="form-grid">
+    {{ form.hidden_tag() }}
+    <label class="full-field">{{ form.name.label }}{{ form.name(placeholder="למשל: DJ") }}</label>
+    <label>{{ form.category.label }}{{ form.category() }}</label>
+    <label>{{ form.status.label }}{{ form.status() }}</label>
+    <label class="full-field">{{ form.supplier_name.label }}{{ form.supplier_name(placeholder="שם הספק") }}</label>
+    <label>{{ form.planned_amount.label }}{{ form.planned_amount(step="0.01", min="0") }}</label>
+    <label>{{ form.actual_amount.label }}{{ form.actual_amount(step="0.01", min="0") }}</label>
+    <label>{{ form.paid_amount.label }}{{ form.paid_amount(step="0.01", min="0") }}</label>
+    <label>{{ form.due_date.label }}{{ form.due_date() }}</label>
+    <label class="full-field">{{ form.notes.label }}{{ form.notes(rows=4, placeholder="פרטי תשלום, תנאים, הערות...") }}</label>
+    <div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('budget.index') }}">ביטול</a>{{ form.submit(class="primary-button inline") }}</div>
+  </form>
+</section>
+{% endblock %}

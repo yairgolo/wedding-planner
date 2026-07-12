@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}שיתוף קניות | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">ייצוא לטקסט</p><h1>שיתוף רשימת קניות</h1><p class="muted">העתיקו את הרשימה או פתחו אותה ישירות ב-WhatsApp.</p></div></section>
+<section class="panel share-panel">
+  <textarea id="shareText" rows="18" readonly>{{ text }}</textarea>
+  <div class="header-actions">
+    <button class="secondary-button inline" type="button" data-copy-text="#shareText">📋 העתקה</button>
+    <button class="secondary-button inline" type="button" data-native-share="#shareText">↗️ שיתוף</button>
+    <a class="primary-button inline" href="{{ whatsapp_url }}" target="_blank">WhatsApp</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/share-text.js') }}" defer></script>{% endblock %}

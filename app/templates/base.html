@@ -24,11 +24,12 @@
         <div><strong>Wedding Planner</strong><small>מרכז ניהול החתונה</small></div>
       </div>
       <nav class="nav-list">
-        <a class="nav-link active" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
+        <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
         <a class="nav-link {% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span>מוזמנים</a>
         <a class="nav-link {% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span>הזמנות ו-WhatsApp</a>
         <a class="nav-link {% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span>הושבה</a>
-        <a class="nav-link disabled" href="#"><span>🛒</span>קניות<small>בקרוב</small></a>
+        <a class="nav-link {% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span>קניות</a>
+        <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
         <a class="nav-link disabled" href="#"><span>🤝</span>ספקים<small>בקרוב</small></a>
         <a class="nav-link disabled" href="#"><span>📋</span>משימות<small>בקרוב</small></a>
       </nav>
@@ -55,7 +56,7 @@
       <a href="{{ url_for('guests.create') }}" class="quick-add" aria-label="הוספת מוזמן">＋</a>
       <a class="{% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span><small>הזמנות</small></a>
       <a class="{% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span><small>הושבה</small></a>
-      <a href="#"><span>⚙️</span><small>הגדרות</small></a>
+      <a class="{% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span><small>קניות</small></a>
     </nav>
   </div>
   {% else %}

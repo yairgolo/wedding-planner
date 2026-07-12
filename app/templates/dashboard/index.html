@@ -2,42 +2,21 @@
 {% block title %}דשבורד | Wedding Planner{% endblock %}
 {% block content %}
 <section class="page-header">
-  <div>
-    <p class="eyebrow">בוקר טוב, {{ current_user.display_name }}</p>
-    <h1>{% if wedding %}{{ wedding.display_name }}{% else %}החתונה שלכם{% endif %}</h1>
-    <p class="muted">כל מה שחשוב, במקום אחד.</p>
-  </div>
-  <button class="secondary-button" type="button">＋ הוספה מהירה</button>
+  <div><p class="eyebrow">שלום, {{ current_user.display_name }}</p><h1>{% if wedding %}{{ wedding.display_name }}{% else %}החתונה שלכם{% endif %}</h1><p class="muted">כל מה שחשוב, במקום אחד.</p></div>
+  <div class="header-actions"><a class="secondary-button inline" href="{{ url_for('shopping.create') }}">＋ קנייה</a><a class="primary-button inline" href="{{ url_for('guests.create') }}">＋ מוזמן</a></div>
 </section>
-
 <section class="hero-card">
-  <div>
-    <p>הספירה לאחור</p>
-    <strong>{% if wedding and wedding.days_until is not none %}{{ wedding.days_until }} ימים{% else %}הגדירו תאריך חתונה{% endif %}</strong>
-    <span>{% if wedding and wedding.event_date %}{{ wedding.event_date.strftime('%d.%m.%Y') }}{% else %}ההגדרות יתווספו בספרינט הבא{% endif %}</span>
-  </div>
-  <div class="progress-ring" aria-label="התקדמות 20 אחוז"><span>20%</span></div>
+  <div><p>הספירה לאחור</p><strong>{% if wedding and wedding.days_until is not none %}{{ wedding.days_until }} ימים{% else %}הגדירו תאריך חתונה{% endif %}</strong><span>{% if wedding and wedding.event_date %}{{ wedding.event_date.strftime('%d.%m.%Y') }}{% else %}עדכנו את תאריך האירוע בהמשך{% endif %}</span></div>
+  <div class="progress-ring" aria-label="התקדמות"><span>{% if wedding and wedding.budget_target %}{{ [100, ((metrics.budget_paid / wedding.budget_target) * 100)|int]|min }}%{% else %}—{% endif %}</span></div>
 </section>
-
 <section class="metric-grid">
-  <article class="metric-card"><span class="metric-icon">👥</span><div><small>מוזמנים</small><strong>{{ metrics.guests }}</strong><p>{{ metrics.confirmed }} אישרו</p></div></article>
-  <article class="metric-card"><span class="metric-icon">🪑</span><div><small>ללא שולחן</small><strong>{{ metrics.unseated }}</strong><p>{{ metrics.tables|default(0) }} שולחנות במערכת</p></div></article>
-  <article class="metric-card"><span class="metric-icon">📋</span><div><small>משימות פתוחות</small><strong>{{ metrics.tasks }}</strong><p>אין משימות דחופות</p></div></article>
-  <article class="metric-card"><span class="metric-icon">🛒</span><div><small>קניות שנותרו</small><strong>{{ metrics.purchases }}</strong><p>חתונה, בית וכללי</p></div></article>
+  <a class="metric-card metric-link" href="{{ url_for('guests.index') }}"><span class="metric-icon">👥</span><div><small>מוזמנים</small><strong>{{ metrics.guests }}</strong><p>{{ metrics.confirmed }} אישרו</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('seating.index') }}"><span class="metric-icon">🪑</span><div><small>ללא שולחן</small><strong>{{ metrics.unseated }}</strong><p>ממתינים לשיבוץ</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('budget.index') }}"><span class="metric-icon">💰</span><div><small>שולם בתקציב</small><strong>₪{{ '{:,.0f}'.format(metrics.budget_paid|float) }}</strong><p>מעקב תשלומים</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('shopping.index') }}"><span class="metric-icon">🛒</span><div><small>קניות שנותרו</small><strong>{{ metrics.purchases }}</strong><p>הוצאו ₪{{ '{:,.0f}'.format(metrics.shopping_spent|float) }}</p></div></a>
 </section>
-
 <section class="content-grid">
-  <article class="panel">
-    <div class="panel-heading"><div><p class="eyebrow">היום</p><h2>מה נשאר לעשות?</h2></div><button class="text-button">לכל המשימות</button></div>
-    <div class="empty-state"><span>✓</span><h3>הכול רגוע כרגע</h3><p>בספרינטים הבאים יופיעו כאן משימות, תשלומים והתראות.</p></div>
-  </article>
-  <article class="panel">
-    <div class="panel-heading"><div><p class="eyebrow">מבט מהיר</p><h2>מצב אישורי הגעה</h2></div></div>
-    <div class="status-list">
-      <div><span class="dot confirmed"></span><p>אישרו</p><strong>{{ metrics.confirmed }}</strong></div>
-      <div><span class="dot pending"></span><p>ממתינים</p><strong>{{ metrics.pending }}</strong></div>
-      <div><span class="dot declined"></span><p>לא מגיעים</p><strong>{{ metrics.declined }}</strong></div>
-    </div>
-  </article>
+  <article class="panel"><div class="panel-heading"><div><p class="eyebrow">מהיר ונוח</p><h2>מרכז פעולות</h2></div></div><div class="dashboard-actions"><a href="{{ url_for('invitations.index') }}">💌 שליחת הזמנות</a><a href="{{ url_for('seating.event_day') }}">🔎 חיפוש שולחן</a><a href="{{ url_for('shopping.share_text') }}">📱 שיתוף קניות</a><a href="{{ url_for('budget.share_text') }}">💰 שיתוף תקציב</a></div></article>
+  <article class="panel"><div class="panel-heading"><div><p class="eyebrow">מבט מהיר</p><h2>מצב אישורי הגעה</h2></div></div><div class="status-list"><div><span class="dot confirmed"></span><p>אישרו</p><strong>{{ metrics.confirmed }}</strong></div><div><span class="dot pending"></span><p>ממתינים</p><strong>{{ metrics.pending }}</strong></div><div><span class="dot declined"></span><p>לא מגיעים</p><strong>{{ metrics.declined }}</strong></div></div></article>
 </section>
 {% endblock %}

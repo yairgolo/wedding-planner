@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">קניות</p><h1>{{ title }}</h1><p class="muted">כל הפרטים נשמרים ברשימה וייכנסו גם לייצוא.</p></div></section>
+<section class="panel form-panel">
+  <form method="post" class="form-grid">
+    {{ form.hidden_tag() }}
+    <label class="full-field">{{ form.name.label }}{{ form.name(placeholder="למשל: מכונת כביסה") }}{% for e in form.name.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+    <label>{{ form.category.label }}{{ form.category() }}</label>
+    <label>{{ form.status.label }}{{ form.status() }}</label>
+    <label>{{ form.priority.label }}{{ form.priority() }}</label>
+    <label>{{ form.quantity.label }}{{ form.quantity(min=1) }}</label>
+    <label>{{ form.estimated_price.label }}{{ form.estimated_price(step="0.01", min="0") }}</label>
+    <label>{{ form.actual_price.label }}{{ form.actual_price(step="0.01", min="0") }}</label>
+    <label>{{ form.store_name.label }}{{ form.store_name(placeholder="שם החנות") }}</label>
+    <label>{{ form.due_date.label }}{{ form.due_date() }}</label>
+    <label class="full-field">{{ form.product_url.label }}{{ form.product_url(placeholder="https://...") }}{% for e in form.product_url.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+    <label class="checkbox-box full-field">{{ form.is_wishlist() }} {{ form.is_wishlist.label.text }}</label>
+    <label class="full-field">{{ form.notes.label }}{{ form.notes(rows=4, placeholder="מידות, צבע, הערות להשוואה...") }}</label>
+    <div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('shopping.index') }}">ביטול</a>{{ form.submit(class="primary-button inline") }}</div>
+  </form>
+</section>
+{% endblock %}

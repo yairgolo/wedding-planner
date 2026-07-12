@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}קניות | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header shopping-page-header">
+  <div>
+    <p class="eyebrow">Sprint 5</p>
+    <h1>ניהול קניות</h1>
+    <p class="muted">חתונה, בית וכל מה שביניהם — רשימה אחת מסודרת עם עלויות וסטטוס.</p>
+  </div>
+  <div class="header-actions">
+    <a class="secondary-button inline" href="{{ url_for('shopping.share_text') }}">📱 שיתוף רשימה</a>
+    <a class="secondary-button inline" href="{{ url_for('shopping.export_excel') }}">📊 ייצוא Excel</a>
+    <a class="primary-button inline" href="{{ url_for('shopping.create') }}">＋ פריט חדש</a>
+  </div>
+</section>
+
+<section class="guest-stats shopping-stats">
+  <article><small>סה״כ פריטים</small><strong>{{ stats.total }}</strong><span>ברשימה</span></article>
+  <article><small>נקנו</small><strong>{{ stats.purchased }}</strong><span>הושלמו</span></article>
+  <article><small>נשארו</small><strong>{{ stats.remaining }}</strong><span>לטיפול</span></article>
+  <article><small>עלות בפועל</small><strong>₪{{ '{:,.0f}'.format(stats.actual) }}</strong><span>פריטים שנקנו</span></article>
+</section>
+
+<section class="panel shopping-toolbar">
+  <form method="get" class="filter-bar shopping-filter-bar">
+    <input type="search" name="q" value="{{ q }}" placeholder="חיפוש פריט, חנות או הערה">
+    <select name="category">
+      <option value="">כל הקטגוריות</option>
+      {% for key, label in category_labels.items() %}<option value="{{ key }}" {% if request.args.get('category') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      {% for key, label in status_labels.items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="compact-check"><input type="checkbox" name="wishlist" value="1" {% if request.args.get('wishlist') == '1' %}checked{% endif %}> Wishlist בלבד</label>
+    <button class="primary-button inline" type="submit">סינון</button>
+    <a class="text-button" href="{{ url_for('shopping.index') }}">נקה</a>
+  </form>
+</section>
+
+<section class="shopping-list">
+  {% for item in items %}
+  <article class="shopping-card {% if item.is_purchased %}done{% endif %} {% if item.is_overdue %}overdue{% endif %}">
+    <form method="post" action="{{ url_for('shopping.toggle', item_id=item.id) }}" class="shopping-check-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="shopping-check" aria-label="שינוי סטטוס">{% if item.is_purchased %}✓{% else %}○{% endif %}</button>
+    </form>
+    <div class="shopping-main">
+      <div class="shopping-title-row">
+        <div>
+          <div class="shopping-badges">
+            <span class="status-badge {{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span>
+            <span class="category-chip">{{ category_labels.get(item.category, item.category) }}</span>
+            {% if item.is_wishlist %}<span class="wishlist-chip">♡ Wishlist</span>{% endif %}
+            {% if item.is_overdue %}<span class="danger-chip">באיחור</span>{% endif %}
+          </div>
+          <h3>{{ item.name }}</h3>
+          <p class="muted small-text">
+            {{ item.quantity }} יח׳
+            {% if item.store_name %} · {{ item.store_name }}{% endif %}
+            {% if item.due_date %} · יעד {{ item.due_date.strftime('%d/%m/%Y') }}{% endif %}
+          </p>
+        </div>
+        <div class="shopping-price">
+          <strong>₪{{ '{:,.0f}'.format((item.total_actual if item.is_purchased else item.total_estimated)|float) }}</strong>
+          <small>{% if item.is_purchased %}בפועל{% else %}משוער{% endif %}</small>
+        </div>
+      </div>
+      {% if item.notes %}<p class="shopping-notes">{{ item.notes }}</p>{% endif %}
+    </div>
+    <div class="shopping-actions">
+      {% if item.product_url %}<a href="{{ item.product_url }}" target="_blank" rel="noopener" aria-label="פתיחת מוצר">🔗</a>{% endif %}
+      <a href="{{ url_for('shopping.edit', item_id=item.id) }}" aria-label="עריכה">✏️</a>
+      <form method="post" action="{{ url_for('shopping.delete', item_id=item.id) }}" onsubmit="return confirm('להעביר את הפריט לסל המחזור?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" aria-label="מחיקה">🗑️</button>
+      </form>
+    </div>
+  </article>
+  {% else %}
+  <div class="panel empty-state"><span>🛒</span><h3>עדיין אין פריטים</h3><p>הוסיפו את הפריט הראשון לרשימת הקניות.</p><a class="primary-button inline" href="{{ url_for('shopping.create') }}">הוספת פריט</a></div>
+  {% endfor %}
+</section>
+<a class="floating-add" href="{{ url_for('shopping.create') }}" aria-label="הוספת פריט">＋</a>
+{% endblock %}
