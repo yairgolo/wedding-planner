@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}מרכז ייצוא | Wedding Planner{% endblock %}{% block content %}
+<section class="page-header"><div><p class="eyebrow">כל הדוחות במקום אחד</p><h1>📤 מרכז ייצוא</h1><p class="muted">Excel מעוצב מהמודולים הקיימים או CSV אוניברסלי.</p></div></section>
+<section class="export-grid">
+{% set modules=[('מוזמנים','guests','guests.export_excel'),('הושבה','seating','seating.export_excel'),('ספקים','vendors','vendors.export_excel'),('משימות','tasks','tasks.export_excel'),('קניות','shopping','shopping.export_excel'),('תקציב','budget','budget.export_excel'),('מתנות','gifts','gifts.export_excel')] %}
+{% for label,key,excel_endpoint in modules %}<article class="panel export-card"><h2>{{ label }}</h2><div class="export-actions"><a class="primary-button" href="{{ url_for(excel_endpoint) }}">Excel</a>{% if key != 'seating' and key != 'budget' %}<a class="secondary-button" href="{{ url_for('exports.module_csv', module=key) }}">CSV</a>{% endif %}</div></article>{% endfor %}
+</section>{% endblock %}

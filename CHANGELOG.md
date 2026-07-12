@@ -52,3 +52,14 @@
 - Signed vendor contracts now create and synchronize a linked budget expense automatically.
 - Vendor payment, amount, due date, category, cancellation and deletion stay synchronized with budget.
 - Linked budget expenses are edited from the vendor card to avoid conflicting values.
+
+## 0.8.0 — Sprint 8 Wedding Core
+
+- Added a central Wedding Profile used as the system source of truth.
+- Added Dashboard 2.0 with readiness score, attention items and quick actions.
+- Added universal search across guests, vendors, tasks, shopping, gifts and documents.
+- Added a computed notification center.
+- Added guest import from Excel and CSV with duplicate handling.
+- Added a central export center and CSV export endpoints.
+- Added new Wedding profile fields and safe SQLite upgrade logic.
+- Unified form controls and submit-button styling across desktop and mobile.

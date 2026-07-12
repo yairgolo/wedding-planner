@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}התראות | Wedding Planner{% endblock %}{% block content %}
+<section class="page-header"><div><p class="eyebrow">מה דורש תשומת לב</p><h1>🔔 מרכז התראות</h1></div></section>
+<section class="panel notification-list">{% for icon,text,endpoint,level in items %}<a class="notification-item {{ level }}" href="{{ url_for(endpoint) }}"><span>{{ icon }}</span><strong>{{ text }}</strong><em>לפתיחה ←</em></a>{% else %}<div class="empty-state"><strong>הכול נראה מצוין 🎉</strong><p>אין כרגע התראות פעילות.</p></div>{% endfor %}</section>
+{% endblock %}

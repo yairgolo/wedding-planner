@@ -86,12 +86,43 @@ def index():
             if vendor.status in {"booked", "completed"} and not vendor.contract_signed
         ),
     }
+    readiness_checks = [
+        bool(wedding and wedding.event_date),
+        bool(wedding and wedding.venue_name),
+        metrics["guests"] > 0,
+        metrics["pending"] == 0 if metrics["guests"] else False,
+        metrics["unseated"] == 0 if metrics["confirmed"] else False,
+        metrics["overdue_tasks"] == 0,
+        metrics["unsigned_contracts"] == 0,
+        metrics["vendor_balance"] == 0 if metrics["vendors"] else False,
+    ]
+    health_score = round((sum(readiness_checks) / len(readiness_checks)) * 100)
+    attention_items = []
+    if metrics["pending"]:
+        attention_items.append(
+            ("⏳", f"{metrics['pending']} מוזמנים עדיין לא אישרו", "guests.index")
+        )
+    if metrics["unseated"]:
+        attention_items.append(
+            ("🪑", f"{metrics['unseated']} אורחים עדיין ללא שולחן", "seating.index")
+        )
+    if metrics["overdue_tasks"]:
+        attention_items.append(("📋", f"{metrics['overdue_tasks']} משימות באיחור", "tasks.index"))
+    if metrics["vendor_balance"]:
+        attention_items.append(
+            ("💰", f"נותרו ₪{float(metrics['vendor_balance']):,.0f} לתשלום לספקים", "vendors.index")
+        )
     urgent_tasks = sorted(
         [task for task in tasks if task.status != "done"],
         key=lambda task: (task.due_date is None, task.due_date, task.priority != "urgent"),
     )[:5]
     return render_template(
-        "dashboard/index.html", wedding=wedding, metrics=metrics, urgent_tasks=urgent_tasks
+        "dashboard/index.html",
+        wedding=wedding,
+        metrics=metrics,
+        urgent_tasks=urgent_tasks,
+        health_score=health_score,
+        attention_items=attention_items,
     )
 
 

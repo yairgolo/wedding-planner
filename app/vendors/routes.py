@@ -12,9 +12,9 @@ from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import AuditLog, Vendor, Wedding
+from app.services.vendor_budget import sync_vendor_to_budget
 
 from .forms import VendorForm
-from app.services.vendor_budget import sync_vendor_to_budget
 
 vendors_bp = Blueprint("vendors", __name__, url_prefix="/vendors")
 

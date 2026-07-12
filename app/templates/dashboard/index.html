@@ -1,34 +1,27 @@
 {% extends "base.html" %}
 {% block title %}דשבורד | Wedding Planner{% endblock %}
 {% block content %}
-<section class="page-header">
-  <div><p class="eyebrow">שלום, {{ current_user.display_name }}</p><h1>{% if wedding %}{{ wedding.display_name }}{% else %}החתונה שלכם{% endif %}</h1><p class="muted">כל מה שחשוב, במקום אחד.</p></div>
-  <div class="header-actions"><a class="secondary-button inline" href="{{ url_for('tasks.create') }}">＋ משימה</a><a class="primary-button inline" href="{{ url_for('guests.create') }}">＋ מוזמן</a></div>
+<section class="page-header dashboard-header">
+  <div><p class="eyebrow">שלום, {{ current_user.display_name }} 👋</p><h1>{% if wedding %}{{ wedding.display_name }}{% else %}החתונה שלכם{% endif %}</h1><p class="muted">מרכז השליטה של ההכנות לחתונה.</p></div>
+  <div class="header-actions"><a class="secondary-button inline" href="{{ url_for('settings.wedding_profile') }}">💍 פרופיל החתונה</a><a class="primary-button inline" href="{{ url_for('guests.create') }}">＋ מוזמן</a></div>
 </section>
-<section class="hero-card">
-  <div><p>הספירה לאחור</p><strong>{% if wedding and wedding.days_until is not none %}{{ wedding.days_until }} ימים{% else %}הגדירו תאריך חתונה{% endif %}</strong><span>{% if wedding and wedding.event_date %}{{ wedding.event_date.strftime('%d.%m.%Y') }}{% else %}עדכנו את תאריך האירוע בהמשך{% endif %}</span></div>
-  <div class="progress-ring" aria-label="התקדמות"><span>{% if wedding and wedding.budget_target %}{{ [100, ((metrics.budget_paid / wedding.budget_target) * 100)|int]|min }}%{% else %}—{% endif %}</span></div>
+<section class="dashboard-hero-grid">
+  <article class="hero-card countdown-card"><div><p>הספירה לאחור</p><strong>{% if wedding and wedding.days_until is not none %}{{ wedding.days_until }} ימים{% else %}הגדירו תאריך{% endif %}</strong><span>{% if wedding and wedding.event_date %}{{ wedding.event_date.strftime('%d.%m.%Y') }}{% endif %}{% if wedding and wedding.hebrew_date %} · {{ wedding.hebrew_date }}{% endif %}</span></div></article>
+  <article class="health-card"><div class="health-score">{{ health_score }}%</div><div><p class="eyebrow">Wedding Health</p><h2>מוכנות לחתונה</h2><div class="health-bar"><span style="width: {{ health_score }}%"></span></div></div></article>
 </section>
 <section class="metric-grid">
   <a class="metric-card metric-link" href="{{ url_for('guests.index') }}"><span class="metric-icon">👥</span><div><small>מוזמנים</small><strong>{{ metrics.guests }}</strong><p>{{ metrics.confirmed }} אישרו</p></div></a>
-  <a class="metric-card metric-link" href="{{ url_for('tasks.index') }}"><span class="metric-icon">📋</span><div><small>משימות פתוחות</small><strong>{{ metrics.tasks }}</strong><p>{{ metrics.overdue_tasks }} באיחור</p></div></a>
-  <a class="metric-card metric-link" href="{{ url_for('vendors.index') }}"><span class="metric-icon">🤝</span><div><small>ספקים</small><strong>{{ metrics.vendors }}</strong><p>יתרה ₪{{ '{:,.0f}'.format(metrics.vendor_balance|float) }}</p></div></a>
   <a class="metric-card metric-link" href="{{ url_for('seating.index') }}"><span class="metric-icon">🪑</span><div><small>ללא שולחן</small><strong>{{ metrics.unseated }}</strong><p>ממתינים לשיבוץ</p></div></a>
-  <a class="metric-card metric-link" href="{{ url_for('budget.index') }}"><span class="metric-icon">💰</span><div><small>שולם בתקציב</small><strong>₪{{ '{:,.0f}'.format(metrics.budget_paid|float) }}</strong><p>מעקב תשלומים</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('vendors.index') }}"><span class="metric-icon">🤝</span><div><small>יתרה לספקים</small><strong>₪{{ '{:,.0f}'.format(metrics.vendor_balance|float) }}</strong><p>{{ metrics.vendors }} ספקים</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('tasks.index') }}"><span class="metric-icon">📋</span><div><small>משימות פתוחות</small><strong>{{ metrics.tasks }}</strong><p>{{ metrics.overdue_tasks }} באיחור</p></div></a>
   <a class="metric-card metric-link" href="{{ url_for('shopping.index') }}"><span class="metric-icon">🛒</span><div><small>קניות שנותרו</small><strong>{{ metrics.purchases }}</strong><p>הוצאו ₪{{ '{:,.0f}'.format(metrics.shopping_spent|float) }}</p></div></a>
+  <a class="metric-card metric-link" href="{{ url_for('documents.index') }}"><span class="metric-icon">📂</span><div><small>מסמכים</small><strong>{{ metrics.documents }}</strong><p>{{ metrics.unsigned_contracts }} חוזים חסרים</p></div></a>
+</section>
+<section class="quick-action-grid">
+  <a href="{{ url_for('guests.create') }}">＋<span>מוזמן</span></a><a href="{{ url_for('vendors.create') }}">＋<span>ספק</span></a><a href="{{ url_for('tasks.create') }}">＋<span>משימה</span></a><a href="{{ url_for('shopping.create') }}">＋<span>קנייה</span></a><a href="{{ url_for('invitations.index') }}">💌<span>הזמנות</span></a><a href="{{ url_for('exports.index') }}">📤<span>ייצוא</span></a>
 </section>
 <section class="content-grid">
-  <article class="panel">
-    <div class="panel-heading"><div><p class="eyebrow">מהיר ונוח</p><h2>מרכז פעולות</h2></div></div>
-    <div class="dashboard-actions"><a href="{{ url_for('invitations.index') }}">💌 שליחת הזמנות</a><a href="{{ url_for('seating.event_day') }}">🔎 חיפוש שולחן</a><a href="{{ url_for('vendors.share_text') }}">🤝 שיתוף ספקים</a><a href="{{ url_for('tasks.share_text') }}">📋 שיתוף משימות</a></div>
-  </article>
-  <article class="panel">
-    <div class="panel-heading"><div><p class="eyebrow">מה דחוף עכשיו</p><h2>משימות קרובות</h2></div><a class="text-button" href="{{ url_for('tasks.index') }}">לכל המשימות</a></div>
-    <div class="dashboard-task-list">
-      {% for task in urgent_tasks %}
-      <a href="{{ url_for('tasks.edit', task_id=task.id) }}"><span class="priority-dot {{ task.priority }}"></span><div><strong>{{ task.title }}</strong><small>{% if task.due_date %}עד {{ task.due_date.strftime('%d/%m/%Y') }}{% else %}ללא תאריך יעד{% endif %}{% if task.assigned_to %} · {{ task.assigned_to }}{% endif %}</small></div>{% if task.is_overdue %}<em>באיחור</em>{% endif %}</a>
-      {% else %}<div class="empty-mini">אין משימות פתוחות 🎉</div>{% endfor %}
-    </div>
-  </article>
+  <article class="panel"><div class="panel-heading"><div><p class="eyebrow">מה דורש תשומת לב</p><h2>המלצות להיום</h2></div><a class="text-button" href="{{ url_for('notifications.index') }}">כל ההתראות</a></div><div class="attention-list">{% for icon,text,endpoint in attention_items %}<a href="{{ url_for(endpoint) }}"><span>{{ icon }}</span><strong>{{ text }}</strong><em>←</em></a>{% else %}<div class="empty-mini">הכול מתקדם מצוין 🎉</div>{% endfor %}</div></article>
+  <article class="panel"><div class="panel-heading"><div><p class="eyebrow">מה דחוף עכשיו</p><h2>משימות קרובות</h2></div><a class="text-button" href="{{ url_for('tasks.index') }}">לכל המשימות</a></div><div class="dashboard-task-list">{% for task in urgent_tasks %}<a href="{{ url_for('tasks.edit', task_id=task.id) }}"><span class="priority-dot {{ task.priority }}"></span><div><strong>{{ task.title }}</strong><small>{% if task.due_date %}עד {{ task.due_date.strftime('%d/%m/%Y') }}{% else %}ללא תאריך יעד{% endif %}</small></div>{% if task.is_overdue %}<em>באיחור</em>{% endif %}</a>{% else %}<div class="empty-mini">אין משימות פתוחות 🎉</div>{% endfor %}</div></article>
 </section>
 {% endblock %}

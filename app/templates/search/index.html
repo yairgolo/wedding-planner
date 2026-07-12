@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}חיפוש | Wedding Planner{% endblock %}{% block content %}
+<section class="page-header"><div><p class="eyebrow">חיפוש בכל המערכת</p><h1>🔍 חיפוש גלובלי</h1></div></section>
+<form class="global-search-page" method="get"><input class="app-input" name="q" value="{{ query }}" placeholder="שם מוזמן, ספק, משימה, מסמך..."><button class="primary-button" type="submit">חיפוש</button></form>
+{% if query %}<div class="search-results">
+{% set labels={'guests':'מוזמנים','vendors':'ספקים','tasks':'משימות','shopping':'קניות','gifts':'מתנות','documents':'מסמכים'} %}
+{% for kind, items in results.items() %}<section class="panel"><div class="panel-heading"><h2>{{ labels[kind] }}</h2><span class="badge">{{ items|length }}</span></div>
+<div class="result-list">{% for item in items %}
+{% if kind=='guests' %}<a href="{{ url_for('guests.edit', guest_id=item.id) }}"><strong>{{ item.full_name }}</strong><small>{{ item.phone or '' }}</small></a>
+{% elif kind=='vendors' %}<a href="{{ url_for('vendors.edit', vendor_id=item.id) }}"><strong>{{ item.name }}</strong><small>{{ item.contact_name or '' }}</small></a>
+{% elif kind=='tasks' %}<a href="{{ url_for('tasks.edit', task_id=item.id) }}"><strong>{{ item.title }}</strong><small>{{ item.status }}</small></a>
+{% elif kind=='shopping' %}<a href="{{ url_for('shopping.edit', item_id=item.id) }}"><strong>{{ item.name }}</strong><small>{{ item.store_name or '' }}</small></a>
+{% elif kind=='gifts' %}<a href="{{ url_for('gifts.edit', gift_id=item.id) }}"><strong>{{ item.guest_name }}</strong><small>₪{{ item.amount }}</small></a>
+{% elif kind=='documents' %}<a href="{{ url_for('documents.download', document_id=item.id) }}"><strong>{{ item.title }}</strong><small>{{ item.original_filename }}</small></a>{% endif %}
+{% else %}<div class="empty-mini">לא נמצאו תוצאות</div>{% endfor %}</div></section>{% endfor %}</div>{% endif %}
+{% endblock %}
