@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.extensions import db
@@ -54,7 +54,7 @@ def sync_vendor_to_budget(vendor: Vendor) -> BudgetItem | None:
 
     if not active_contract:
         if item and item.deleted_at is None:
-            item.deleted_at = datetime.now(UTC)
+            item.deleted_at = datetime.now(timezone.utc)
             item.status = "cancelled"
         return item
 

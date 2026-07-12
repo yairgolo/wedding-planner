@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from app.extensions import db
@@ -23,13 +23,13 @@ class BudgetItem(db.Model):
     notes = db.Column(db.Text, nullable=True)
     deleted_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     created_at = db.Column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     wedding = db.relationship("Wedding", back_populates="budget_items")
@@ -54,4 +54,4 @@ class BudgetItem(db.Model):
         return bool(self.due_date and self.due_date < date.today() and self.balance > 0)
 
     def soft_delete(self) -> None:
-        self.deleted_at = datetime.now(UTC)
+        self.deleted_at = datetime.now(timezone.utc)

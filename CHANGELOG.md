@@ -100,3 +100,12 @@
 - Missing phone, email, family, table and optional fields no longer block import.
 - Import completes partially and shows a detailed warning report.
 - Added stable headers, dropdown validation, frozen header and protected system identifiers.
+
+## 0.9.0 — Sprint 8.5 + 9 Combined
+
+- Added Wedding Day Mode with guest/table search, supplier contacts, timeline and checklist.
+- Added admin system-health page for database, uploads, environment and HTTPS readiness.
+- Added installable PWA foundation and static asset service worker.
+- Added Python 3.10 compatibility by replacing `datetime.UTC` usage.
+- Added event-day task category and accessibility/focus polish.
+- Added print-friendly styling for operational pages.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from io import BytesIO
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
@@ -128,42 +128,47 @@ def index():
             else:
                 singles.append(guest)
         for name, members in sorted(grouped.items(), key=lambda pair: pair[0]):
-            family_groups.append({
-                "name": name,
-                "members": members,
-                "invited": sum(member.invited_count for member in members),
-                "confirmed": sum(
-                    member.confirmed_count
-                    for member in members
-                    if member.rsvp_status == "confirmed"
-                ),
-                "pending": sum(
-                    member.invited_count
-                    for member in members
-                    if member.rsvp_status in {"pending", "maybe"}
-                ),
-                "tables": sorted(
-                    {member.table_number for member in members if member.table_number}
-                ),
-            })
+            family_groups.append(
+                {
+                    "name": name,
+                    "members": members,
+                    "invited": sum(member.invited_count for member in members),
+                    "confirmed": sum(
+                        member.confirmed_count
+                        for member in members
+                        if member.rsvp_status == "confirmed"
+                    ),
+                    "pending": sum(
+                        member.invited_count
+                        for member in members
+                        if member.rsvp_status in {"pending", "maybe"}
+                    ),
+                    "tables": sorted(
+                        {member.table_number for member in members if member.table_number}
+                    ),
+                }
+            )
         if singles:
-            family_groups.append({
-                "name": "מוזמנים ללא משפחה", "members": singles,
-                "invited": sum(member.invited_count for member in singles),
-                "confirmed": sum(
-                    member.confirmed_count
-                    for member in singles
-                    if member.rsvp_status == "confirmed"
-                ),
-                "pending": sum(
-                    member.invited_count
-                    for member in singles
-                    if member.rsvp_status in {"pending", "maybe"}
-                ),
-                "tables": sorted(
-                    {member.table_number for member in singles if member.table_number}
-                ),
-            })
+            family_groups.append(
+                {
+                    "name": "מוזמנים ללא משפחה",
+                    "members": singles,
+                    "invited": sum(member.invited_count for member in singles),
+                    "confirmed": sum(
+                        member.confirmed_count
+                        for member in singles
+                        if member.rsvp_status == "confirmed"
+                    ),
+                    "pending": sum(
+                        member.invited_count
+                        for member in singles
+                        if member.rsvp_status in {"pending", "maybe"}
+                    ),
+                    "tables": sorted(
+                        {member.table_number for member in singles if member.table_number}
+                    ),
+                }
+            )
 
     return render_template(
         "guests/index.html",
@@ -240,7 +245,7 @@ def mark_sent(guest_id: int):
     if guest.wedding_id != wedding.id or guest.is_deleted:
         abort(404)
     guest.invitation_sent = True
-    guest.invitation_sent_at = datetime.now(UTC)
+    guest.invitation_sent_at = datetime.now(timezone.utc)
     guest.invitation_attempts += 1
     audit(wedding.id, guest, "invitation_sent", f"סומנה שליחת הזמנה ל{guest.full_name}")
     db.session.commit()
@@ -393,7 +398,7 @@ def respond(token: str):
             )
             guest.diet_notes = (form.diet_notes.data or "").strip() or None
             guest.rsvp_message = (form.message.data or "").strip() or None
-            guest.rsvp_updated_at = datetime.now(UTC)
+            guest.rsvp_updated_at = datetime.now(timezone.utc)
             db.session.add(
                 AuditLog(
                     wedding_id=guest.wedding_id,

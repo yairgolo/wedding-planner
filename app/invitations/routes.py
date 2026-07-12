@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import (
@@ -195,7 +195,7 @@ def mark_shared(guest_id: int):
     if activity_type not in {"sent", "reminder"}:
         abort(400)
     guest.invitation_sent = True
-    guest.invitation_sent_at = datetime.now(UTC)
+    guest.invitation_sent_at = datetime.now(timezone.utc)
     guest.invitation_attempts += 1
     db.session.add(
         InvitationActivity(

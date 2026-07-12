@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 
 from app.extensions import db
 
@@ -27,7 +27,7 @@ class Wedding(db.Model):
     notes = db.Column(db.Text, nullable=True)
     budget_target = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     created_at = db.Column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
     guests = db.relationship(

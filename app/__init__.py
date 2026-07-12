@@ -58,6 +58,7 @@ def create_app(config_name: str | None = None) -> Flask:
     from .core.errors import errors_bp
     from .dashboard.routes import dashboard_bp
     from .documents.routes import documents_bp
+    from .event_day.routes import event_day_bp
     from .exports.routes import exports_bp
     from .gifts.routes import gifts_bp
     from .guests.routes import guests_bp, rsvp_bp
@@ -68,6 +69,7 @@ def create_app(config_name: str | None = None) -> Flask:
     from .seating.routes import seating_bp
     from .settings.routes import settings_bp
     from .shopping.routes import shopping_bp
+    from .system.routes import system_bp
     from .tasks.routes import tasks_bp
     from .vendors.routes import vendors_bp
 
@@ -90,6 +92,8 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(notifications_bp)
     app.register_blueprint(imports_bp)
     app.register_blueprint(exports_bp)
+    app.register_blueprint(event_day_bp)
+    app.register_blueprint(system_bp)
     app.register_blueprint(errors_bp)
 
     from .models import (  # noqa: F401

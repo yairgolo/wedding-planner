@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash
@@ -18,7 +18,7 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_active_account = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
     @property

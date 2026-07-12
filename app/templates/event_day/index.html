@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}מצב יום החתונה | Wedding Planner{% endblock %}
+{% block content %}
+<section class="event-day-hero">
+  <div>
+    <p class="eyebrow">🎉 מצב יום החתונה</p>
+    <h1>{{ wedding.display_name }}</h1>
+    <p>{% if wedding.event_date %}{{ wedding.event_date.strftime('%d.%m.%Y') }}{% endif %}{% if wedding.hebrew_date %} · {{ wedding.hebrew_date }}{% endif %}</p>
+  </div>
+  <div class="event-day-actions">
+    {% if wedding.waze_url %}<a class="primary-button inline" href="{{ wedding.waze_url }}" target="_blank" rel="noopener">📍 ניווט לאולם</a>{% endif %}
+    {% if wedding.venue_phone %}<a class="secondary-button inline" href="tel:{{ wedding.venue_phone }}">📞 התקשרות לאולם</a>{% endif %}
+  </div>
+</section>
+
+<section class="event-day-grid">
+  <article class="panel guest-finder-panel">
+    <div class="panel-heading"><div><p class="eyebrow">קבלת פנים</p><h2>חיפוש אורח ושולחן</h2></div></div>
+    <form method="get" class="event-guest-search">
+      <input type="search" name="q" value="{{ query }}" placeholder="שם או מספר טלפון" autofocus>
+      <button class="primary-button inline" type="submit">חיפוש</button>
+    </form>
+    <div class="event-guest-results">
+      {% for guest in guests %}
+      <a href="{{ url_for('guests.edit', guest_id=guest.id) }}" class="event-guest-result">
+        <div><strong>{{ guest.full_name }}</strong><small>{{ guest.phone or 'ללא טלפון' }} · {{ guest.confirmed_count or guest.invited_count }} אנשים</small></div>
+        <span>{% if guest.seating_assignment %}שולחן <b>{{ guest.seating_assignment.table.number }}</b>{% else %}<b>ללא שולחן</b>{% endif %}</span>
+      </a>
+      {% else %}
+        {% if query %}<div class="empty-mini">לא נמצאו אורחים.</div>{% else %}<div class="event-search-hint">הקלידו שם כדי למצוא מיד את מספר השולחן.</div>{% endif %}
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel event-timeline-panel">
+    <div class="panel-heading"><div><p class="eyebrow">לוח זמנים</p><h2>ציר הזמן של היום</h2></div></div>
+    <div class="event-timeline">
+      {% for item in timeline %}
+      <div class="event-timeline-item"><time>{{ item.time.strftime('%H:%M') }}</time><span>{{ item.icon }}</span><div><strong>{{ item.title }}</strong><small>{{ item.subtitle }}</small></div></div>
+      {% else %}<div class="empty-mini">הגדירו שעת חופה ושעות הגעה של ספקים.</div>{% endfor %}
+    </div>
+  </article>
+
+  <article class="panel event-vendors-panel">
+    <div class="panel-heading"><div><p class="eyebrow">אנשי קשר חשובים</p><h2>ספקים ביום האירוע</h2></div><a class="text-button" href="{{ url_for('vendors.index') }}">כל הספקים</a></div>
+    <div class="event-contact-list">
+      {% for vendor in vendors %}
+      <div class="event-contact-card"><div><strong>{{ vendor.name }}</strong><small>{{ vendor.contact_name or vendor.category }}{% if vendor.arrival_time %} · {{ vendor.arrival_time.strftime('%H:%M') }}{% endif %}</small></div><div>{% if vendor.phone %}<a href="tel:{{ vendor.phone }}" aria-label="חיוג">📞</a><a href="https://wa.me/{{ vendor.phone|replace('-', '')|replace(' ', '') }}" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>{% endif %}</div></div>
+      {% else %}<div class="empty-mini">עדיין אין ספקים שסומנו כסגורים.</div>{% endfor %}
+    </div>
+  </article>
+
+  <article class="panel event-checklist-panel">
+    <div class="panel-heading"><div><p class="eyebrow">לא לשכוח</p><h2>צ׳קליסט יום האירוע</h2></div><a class="text-button" href="{{ url_for('tasks.index') }}">לכל המשימות</a></div>
+    <div class="event-checklist">
+      {% for task in tasks %}
+      <a href="{{ url_for('tasks.edit', task_id=task.id) }}"><span class="priority-dot {{ task.priority }}"></span><div><strong>{{ task.title }}</strong><small>{% if task.assigned_to %}אחראי: {{ task.assigned_to }}{% else %}טרם הוגדר אחראי{% endif %}</small></div></a>
+      {% else %}<div class="empty-mini">אין משימות פתוחות ליום האירוע.</div>{% endfor %}
+    </div>
+  </article>
+</section>
+{% endblock %}

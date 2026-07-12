@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}מצב המערכת | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">Admin</p><h1>מצב המערכת</h1><p class="muted">בדיקות מהירות לפני העלאה לשרת ואבחון תקלות.</p></div></section>
+<section class="system-check-grid">
+  {% for label,ok,detail in checks %}
+  <article class="system-check-card {% if ok %}ok{% else %}warning{% endif %}"><span>{{ '✓' if ok else '!' }}</span><div><strong>{{ label }}</strong><small>{{ detail }}</small></div></article>
+  {% endfor %}
+</section>
+<section class="panel system-details"><h2>פרטי סביבה</h2><dl><div><dt>Python</dt><dd>{{ python_version }}</dd></div><div><dt>מערכת הפעלה</dt><dd>{{ platform_name }}</dd></div><div><dt>Database</dt><dd>{{ database_uri }}</dd></div></dl></section>
+{% endblock %}

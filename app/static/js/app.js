@@ -105,3 +105,10 @@
   }
 
 })();
+
+// Sprint 8.5/9 — PWA foundation
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/js/service-worker.js').catch(() => {});
+  });
+}

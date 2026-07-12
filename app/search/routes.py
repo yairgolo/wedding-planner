@@ -100,47 +100,79 @@ def api():
     like = f"%{query}%"
     results = []
     guests = db.session.scalars(
-        db.select(Guest).where(
-            Guest.wedding_id == wedding.id, Guest.deleted_at.is_(None),
-            or_(Guest.first_name.ilike(like), Guest.last_name.ilike(like), Guest.phone.ilike(like))
-        ).limit(5)
+        db.select(Guest)
+        .where(
+            Guest.wedding_id == wedding.id,
+            Guest.deleted_at.is_(None),
+            or_(Guest.first_name.ilike(like), Guest.last_name.ilike(like), Guest.phone.ilike(like)),
+        )
+        .limit(5)
     ).all()
     for item in guests:
-        results.append({"type": "מוזמן", "icon": "👤", "title": item.full_name,
-                        "subtitle": item.phone or "ללא טלפון",
-                        "url": url_for("guests.edit", guest_id=item.id)})
+        results.append(
+            {
+                "type": "מוזמן",
+                "icon": "👤",
+                "title": item.full_name,
+                "subtitle": item.phone or "ללא טלפון",
+                "url": url_for("guests.edit", guest_id=item.id),
+            }
+        )
     vendors = db.session.scalars(
-        db.select(Vendor).where(
-            Vendor.wedding_id == wedding.id, Vendor.deleted_at.is_(None),
-            or_(Vendor.name.ilike(like), Vendor.contact_name.ilike(like), Vendor.phone.ilike(like))
-        ).limit(5)
+        db.select(Vendor)
+        .where(
+            Vendor.wedding_id == wedding.id,
+            Vendor.deleted_at.is_(None),
+            or_(Vendor.name.ilike(like), Vendor.contact_name.ilike(like), Vendor.phone.ilike(like)),
+        )
+        .limit(5)
     ).all()
     for item in vendors:
-        results.append({"type": "ספק", "icon": "🤝", "title": item.name,
-                        "subtitle": item.contact_name or item.phone or "ספק",
-                        "url": url_for("vendors.detail", vendor_id=item.id)})
+        results.append(
+            {
+                "type": "ספק",
+                "icon": "🤝",
+                "title": item.name,
+                "subtitle": item.contact_name or item.phone or "ספק",
+                "url": url_for("vendors.detail", vendor_id=item.id),
+            }
+        )
     tasks = db.session.scalars(
-        db.select(Task).where(
-            Task.wedding_id == wedding.id, Task.deleted_at.is_(None),
-            or_(Task.title.ilike(like), Task.notes.ilike(like))
-        ).limit(5)
+        db.select(Task)
+        .where(
+            Task.wedding_id == wedding.id,
+            Task.deleted_at.is_(None),
+            or_(Task.title.ilike(like), Task.notes.ilike(like)),
+        )
+        .limit(5)
     ).all()
     for item in tasks:
-        results.append({"type": "משימה", "icon": "📋", "title": item.title,
-                        "subtitle": (
-                            item.due_date.strftime("%d/%m/%Y")
-                            if item.due_date
-                            else "ללא תאריך"
-                        ),
-                        "url": url_for("tasks.edit", task_id=item.id)})
+        results.append(
+            {
+                "type": "משימה",
+                "icon": "📋",
+                "title": item.title,
+                "subtitle": (item.due_date.strftime("%d/%m/%Y") if item.due_date else "ללא תאריך"),
+                "url": url_for("tasks.edit", task_id=item.id),
+            }
+        )
     documents = db.session.scalars(
-        db.select(Document).where(
-            Document.wedding_id == wedding.id, Document.deleted_at.is_(None),
-            or_(Document.title.ilike(like), Document.original_filename.ilike(like))
-        ).limit(5)
+        db.select(Document)
+        .where(
+            Document.wedding_id == wedding.id,
+            Document.deleted_at.is_(None),
+            or_(Document.title.ilike(like), Document.original_filename.ilike(like)),
+        )
+        .limit(5)
     ).all()
     for item in documents:
-        results.append({"type": "מסמך", "icon": "📂", "title": item.title,
-                        "subtitle": item.original_filename,
-                        "url": url_for("documents.index", q=item.title)})
+        results.append(
+            {
+                "type": "מסמך",
+                "icon": "📂",
+                "title": item.title,
+                "subtitle": item.original_filename,
+                "url": url_for("documents.index", q=item.title),
+            }
+        )
     return jsonify({"results": results[:12]})

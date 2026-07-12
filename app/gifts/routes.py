@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from io import BytesIO
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
@@ -120,7 +120,7 @@ def thank(gift_id):
     if gift.wedding_id != wedding.id or gift.is_deleted:
         abort(404)
     gift.thank_you_sent = not gift.thank_you_sent
-    gift.thank_you_sent_at = datetime.now(UTC) if gift.thank_you_sent else None
+    gift.thank_you_sent_at = datetime.now(timezone.utc) if gift.thank_you_sent else None
     audit(wedding.id, gift, "thank", f"עודכן סטטוס תודה עבור {gift.guest_name}")
     db.session.commit()
     flash("סטטוס התודה עודכן.", "success")
@@ -212,7 +212,7 @@ def apply_form(gift, form):
     gift.received_date = form.received_date.data
     gift.thank_you_sent = bool(form.thank_you_sent.data)
     gift.thank_you_sent_at = (
-        datetime.now(UTC)
+        datetime.now(timezone.utc)
         if gift.thank_you_sent and not gift.thank_you_sent_at
         else (gift.thank_you_sent_at if gift.thank_you_sent else None)
     )

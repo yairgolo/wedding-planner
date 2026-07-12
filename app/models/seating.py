@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from app.extensions import db
 
@@ -22,13 +22,13 @@ class SeatingTable(db.Model):
     position_x = db.Column(db.Integer, nullable=False, default=0)
     position_y = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     wedding = db.relationship("Wedding", back_populates="seating_tables")
@@ -75,13 +75,13 @@ class SeatingAssignment(db.Model):
     guest_id = db.Column(db.Integer, db.ForeignKey("guests.id"), nullable=False, index=True)
     seat_count = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     table = db.relationship("SeatingTable", back_populates="assignments")

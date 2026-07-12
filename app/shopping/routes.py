@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from urllib.parse import quote
 
@@ -145,7 +145,7 @@ def edit(item_id: int):
         previous_status = item.status
         apply_form(item, form)
         if previous_status != "purchased" and item.status == "purchased":
-            item.purchased_at = datetime.now(UTC)
+            item.purchased_at = datetime.now(timezone.utc)
         audit(wedding.id, item, "update", f"עודכן פריט הקנייה {item.name}")
         db.session.commit()
         flash("הפריט עודכן.", "success")

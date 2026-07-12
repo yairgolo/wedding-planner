@@ -9,6 +9,7 @@ class TaskForm(FlaskForm):
         "קטגוריה",
         choices=[
             ("wedding", "חתונה"),
+            ("event_day", "יום החתונה"),
             ("home", "בית"),
             ("documents", "מסמכים"),
             ("payments", "תשלומים"),

@@ -1,0 +1,12 @@
+{
+  "name": "Wedding Planner",
+  "short_name": "Wedding",
+  "description": "מערכת ניהול חתונה בעברית",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f2e8",
+  "theme_color": "#40513b",
+  "orientation": "portrait-primary",
+  "icons": []
+}

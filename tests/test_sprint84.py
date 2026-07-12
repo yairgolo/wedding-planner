@@ -14,15 +14,11 @@ def test_search_api_returns_entities(client, app):
     login(client)
     with app.app_context():
         wedding = db.session.scalar(db.select(Wedding).limit(1))
-        db.session.add(
-            Guest(wedding_id=wedding.id, first_name="דוד", last_name="כהן")
-        )
+        db.session.add(Guest(wedding_id=wedding.id, first_name="דוד", last_name="כהן"))
         db.session.commit()
     response = client.get("/search/api?q=כהן")
     assert response.status_code == 200
-    assert any(
-        item["type"] == "מוזמן" for item in response.get_json()["results"]
-    )
+    assert any(item["type"] == "מוזמן" for item in response.get_json()["results"])
 
 
 def test_family_view(client, app):
