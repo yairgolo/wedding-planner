@@ -109,3 +109,12 @@
 - Added Python 3.10 compatibility by replacing `datetime.UTC` usage.
 - Added event-day task category and accessibility/focus polish.
 - Added print-friendly styling for operational pages.
+
+## 0.10.1 — Free Production Package
+
+- Added PythonAnywhere WSGI entry point.
+- Added free HTTPS deployment guide without a custom domain.
+- Added PythonAnywhere environment template.
+- Added manual ZIP backup utility for SQLite and uploaded files.
+- Included the iPhone PWA safe-area hotfix.
+
