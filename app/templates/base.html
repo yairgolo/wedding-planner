@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#40513b">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}Wedding Planner{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
@@ -25,7 +26,8 @@
       <nav class="nav-list">
         <a class="nav-link active" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
         <a class="nav-link {% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span>מוזמנים</a>
-        <a class="nav-link disabled" href="#"><span>🪑</span>הושבה<small>בקרוב</small></a>
+        <a class="nav-link {% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span>הזמנות ו-WhatsApp</a>
+        <a class="nav-link {% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span>הושבה</a>
         <a class="nav-link disabled" href="#"><span>🛒</span>קניות<small>בקרוב</small></a>
         <a class="nav-link disabled" href="#"><span>🤝</span>ספקים<small>בקרוב</small></a>
         <a class="nav-link disabled" href="#"><span>📋</span>משימות<small>בקרוב</small></a>
@@ -51,7 +53,8 @@
       <a class="active" href="{{ url_for('dashboard.index') }}"><span>🏠</span><small>בית</small></a>
       <a class="{% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span><small>מוזמנים</small></a>
       <a href="{{ url_for('guests.create') }}" class="quick-add" aria-label="הוספת מוזמן">＋</a>
-      <a href="#"><span>📋</span><small>משימות</small></a>
+      <a class="{% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span><small>הזמנות</small></a>
+      <a class="{% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span><small>הושבה</small></a>
       <a href="#"><span>⚙️</span><small>הגדרות</small></a>
     </nav>
   </div>
@@ -59,5 +62,6 @@
     {% block public_content %}{% endblock %}
   {% endif %}
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,22 +1,41 @@
 # Changelog
 
+## 0.4.0 — Sprint 4 Seating
+
+- Added visual seating management with table capacity tracking.
+- Added drag-and-drop guest assignment on desktop.
+- Added mobile quick assignment controls.
+- Added table creation, editing and guarded deletion.
+- Added capacity validation and table-to-table moves.
+- Added event-day guest lookup with large table numbers.
+- Added styled Excel export for seating and unseated guests.
+- Added dashboard seating metrics and audit events.
+- Included the Sprint 3 HTTPS / Cloudflare mixed-content fix.
+- Added automated seating tests.
+
+## 0.3.0 — Sprint 3 Invitations & WhatsApp
+
+- Added a central invitation management page.
+- Added secure invitation image upload and normalization with Pillow.
+- Added customizable invitation text templates with guest-specific variables.
+- Added iPhone-compatible Web Share flow for image + text + RSVP URL.
+- Added invitation and reminder tracking per guest.
+- Added copy-to-clipboard fallback for invitation text.
+- Added invitation image to the public RSVP page.
+- Added invitation filters and delivery statistics.
+
 ## 0.2.0 — Sprint 2 Guests & RSVP
 
-- Added full guest CRUD with mobile cards and desktop table.
-- Added families, sides, groups, VIP, diet, table and notes fields.
-- Added secure public RSVP links with random tokens.
-- Added RSVP statistics to dashboard.
-- Added guest search and filters.
-- Added invitation-sent tracking and soft delete.
-- Added styled Excel export with summary sheet.
-- Added audit-log foundation and automated guest tests.
-- Fixed SQLite path and CSRF timeout issues from Sprint 1.
+- Guest and family management.
+- Public personal RSVP links.
+- Search, filters, dashboard metrics and Excel export.
+- Soft deletion and audit log foundation.
+
+## 0.1.1 — Foundation fixes
+
+- Fixed SQLite path handling.
+- Fixed CSRF timeout type.
 
 ## 0.1.0 — Sprint 1 Foundation
 
-- New modular Flask architecture.
-- Added authentication and secure sessions.
-- Added SQLAlchemy models for users and weddings.
-- Added responsive RTL design system and dashboard shell.
-- Added Docker, Gunicorn and Nginx deployment files.
-- Added automated tests, Ruff and GitHub Actions.
+- Modular Flask architecture, authentication, SQLAlchemy, responsive RTL UI and Docker.

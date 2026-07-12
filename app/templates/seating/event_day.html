@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}חיפוש הושבה | Wedding Planner{% endblock %}
+{% block content %}
+<section class="event-day-shell">
+  <div class="event-day-heading"><p class="eyebrow">מצב יום האירוע</p><h1>איפה האורח יושב?</h1><p class="muted">חיפוש מהיר לפי שם או מספר טלפון.</p></div>
+  <form method="get" class="event-day-search"><input autofocus type="search" name="q" value="{{ q }}" placeholder="הקלידו שם אורח..."><button class="primary-button inline" type="submit">חיפוש</button></form>
+  {% if q %}
+  <div class="event-results">
+    {% for guest in results %}
+    <article class="event-result-card">
+      <div><strong>{{ guest.full_name }}</strong><small>{{ guest.phone or 'ללא טלפון' }} · {{ {'confirmed':'אישר הגעה','pending':'טרם אישר','maybe':'אולי','declined':'לא מגיע'}.get(guest.rsvp_status, guest.rsvp_status) }}</small></div>
+      {% if guest.seating_assignment %}<div class="event-table-number"><small>שולחן</small><strong>{{ guest.seating_assignment.table.number }}</strong><span>{{ guest.seating_assignment.table.name or '' }}</span></div>{% else %}<div class="event-unseated">⚠️ ללא שולחן</div>{% endif %}
+    </article>
+    {% else %}<div class="panel empty-state"><span>?</span><h3>לא נמצאו תוצאות</h3><p>נסו שם חלקי או מספר טלפון.</p></div>{% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,1 @@
+"""Visual seating management module."""

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import CONFIG_MAP
 
@@ -17,6 +18,13 @@ def create_app(config_name: str | None = None) -> Flask:
     selected = config_name or os.getenv("FLASK_ENV", "development")
 
     app = Flask(__name__, instance_relative_config=True)
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_for=1,
+        x_proto=1,
+        x_host=1,
+        x_port=1,
+    )
     app.config.from_object(CONFIG_MAP.get(selected, CONFIG_MAP["development"]))
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
@@ -48,14 +56,28 @@ def create_app(config_name: str | None = None) -> Flask:
     from .core.errors import errors_bp
     from .dashboard.routes import dashboard_bp
     from .guests.routes import guests_bp, rsvp_bp
+    from .invitations.routes import invitations_bp
+    from .seating.routes import seating_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(guests_bp)
     app.register_blueprint(rsvp_bp)
+    app.register_blueprint(invitations_bp)
+    app.register_blueprint(seating_bp)
     app.register_blueprint(errors_bp)
 
-    from .models import AuditLog, Family, Guest, User, Wedding  # noqa: F401
+    from .models import (  # noqa: F401
+        AuditLog,
+        Family,
+        Guest,
+        InvitationActivity,
+        InvitationSettings,
+        SeatingAssignment,
+        SeatingTable,
+        User,
+        Wedding,
+    )
 
     configure_logging(app)
     register_commands(app)

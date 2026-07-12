@@ -2,7 +2,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required
 
 from app.extensions import db
-from app.models import Guest, Wedding
+from app.models import Guest, SeatingAssignment, SeatingTable, Wedding
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -30,13 +30,25 @@ def index():
             guest.invited_count for guest in active_guests if guest.rsvp_status == "declined"
         ),
         "tasks": 0,
-        "unseated": sum(
-            guest.confirmed_count
-            for guest in active_guests
-            if guest.rsvp_status == "confirmed" and not guest.table_number
-        ),
+        "unseated": 0,
         "purchases": 0,
     }
+    if wedding:
+        assigned_guest_ids = set(
+            db.session.scalars(
+                db.select(SeatingAssignment.guest_id).where(
+                    SeatingAssignment.wedding_id == wedding.id
+                )
+            ).all()
+        )
+        metrics["unseated"] = sum(
+            (guest.confirmed_count if guest.rsvp_status == "confirmed" else guest.invited_count)
+            for guest in active_guests
+            if guest.rsvp_status != "declined" and guest.id not in assigned_guest_ids
+        )
+        metrics["tables"] = db.session.scalar(
+            db.select(db.func.count(SeatingTable.id)).where(SeatingTable.wedding_id == wedding.id)
+        ) or 0
     return render_template("dashboard/index.html", wedding=wedding, metrics=metrics)
 
 

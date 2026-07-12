@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">ניהול הושבה</p><h1>{{ title }}</h1><p class="muted">הגדירו קיבולת, צורה ואזור באולם.</p></div></section>
+<section class="panel form-panel">
+  <form method="post" class="form-grid">
+    {{ form.hidden_tag() }}
+    {% for field in [form.number, form.name, form.capacity, form.shape, form.zone] %}
+    <label>{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+    {% endfor %}
+    <label class="full-field">{{ form.notes.label }}{{ form.notes(rows=4) }}{% for error in form.notes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+    <div class="form-actions full-field"><button class="primary-button inline" type="submit">שמירה</button><a class="secondary-button inline" href="{{ url_for('seating.index') }}">ביטול</a></div>
+  </form>
+</section>
+{% endblock %}

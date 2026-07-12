@@ -2,7 +2,7 @@
 
 מערכת ניהול חתונה בעברית, RTL ו-Mobile First.
 
-## Sprint 1 — Foundation
+## גרסה נוכחית — 0.4.0
 
 הגרסה הנוכחית כוללת:
 
@@ -17,6 +17,10 @@
 - Health endpoint
 - pytest + Ruff + GitHub Actions
 - בסיס Multi-Wedding להרחבה עתידית
+- ניהול מוזמנים ו-RSVP אישי
+- מרכז הזמנות ו-WhatsApp עם שיתוף תמונה וטקסט
+- מערכת הושבה ויזואלית, Drag & Drop ומצב יום האירוע
+- ייצוא Excel למוזמנים ולהושבה
 
 ## הרצה מקומית
 
@@ -58,7 +62,7 @@ docker compose up -d
 
 - Sprint 2: Guests + RSVP
 - Sprint 3: Invitations + WhatsApp
-- Sprint 4: Seating
+- Sprint 4: Seating ✅
 - Sprint 5: Shopping + Budget
 - Sprint 6: Vendors + Tasks
 - Sprint 7: Gifts + Documents
@@ -78,3 +82,14 @@ flask --app run.py init-db
 ```
 
 `init-db` אינו מוחק נתונים קיימים; הוא יוצר את הטבלאות החדשות שחסרות.
+
+## Sprint 3 — הזמנות ו-WhatsApp
+
+לאחר הרצת `init-db`, פתח את `/invitations`:
+
+1. העלה תמונת הזמנה.
+2. ערוך את תבנית ההודעה. ניתן להשתמש במשתנים `{name}`, `{couple}`, `{date}`, `{venue}`, `{address}`, `{rsvp_url}`.
+3. פתח את האתר באייפון דרך HTTPS.
+4. לחץ על "שליחת הזמנה" ובחר WhatsApp בחלון השיתוף.
+
+התמונה מעובדת מראש דרך Canvas ונשלחת כקובץ PNG יחד עם הטקסט וקישור RSVP אישי. השליחה מסומנת רק לאחר שחלון השיתוף הושלם.

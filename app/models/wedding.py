@@ -25,6 +25,15 @@ class Wedding(db.Model):
     families = db.relationship(
         "Family", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
     )
+    seating_tables = db.relationship(
+        "SeatingTable", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
+    invitation_settings = db.relationship(
+        "InvitationSettings",
+        back_populates="wedding",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     @property
     def display_name(self) -> str:

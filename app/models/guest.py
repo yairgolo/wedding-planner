@@ -60,6 +60,9 @@ class Guest(db.Model):
 
     wedding = db.relationship("Wedding", back_populates="guests")
     family = db.relationship("Family", back_populates="guests")
+    seating_assignment = db.relationship(
+        "SeatingAssignment", back_populates="guest", uselist=False, cascade="all, delete-orphan"
+    )
 
     @property
     def full_name(self) -> str:

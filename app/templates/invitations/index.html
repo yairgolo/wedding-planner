@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}הזמנות ו-WhatsApp | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header guests-header">
+  <div>
+    <p class="eyebrow">מרכז הזמנות</p>
+    <h1>הזמנות ו-WhatsApp</h1>
+    <p class="muted">תמונה, טקסט אישי, קישור RSVP ומעקב שליחה במקום אחד.</p>
+  </div>
+</section>
+
+<section class="guest-stats invitation-stats">
+  <article><small>סה״כ רשומות</small><strong>{{ stats.total }}</strong><span>מוזמנים פעילים</span></article>
+  <article><small>נשלחו</small><strong>{{ stats.sent }}</strong><span>שיתופים שהושלמו</span></article>
+  <article><small>טרם נשלחו</small><strong>{{ stats.unsent }}</strong><span>ממתינים להזמנה</span></article>
+  <article><small>טרם אישרו</small><strong>{{ stats.pending }}</strong><span>מתאימים לתזכורת</span></article>
+</section>
+
+<div class="invitation-layout">
+  <section class="panel invitation-editor">
+    <div class="section-heading">
+      <div><p class="eyebrow">הגדרות</p><h2>עיצוב ותוכן ההזמנה</h2></div>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      {{ form.hidden_tag() }}
+      <div class="form-field full">
+        {{ form.message_template.label }}
+        {{ form.message_template(rows=12, placeholder="טקסט ההזמנה...") }}
+        <small class="field-help">משתנים זמינים: {name}, {couple}, {date}, {venue}, {address}, {rsvp_url}</small>
+        {% for error in form.message_template.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="form-field full">
+        {{ form.image.label }}
+        {{ form.image(accept="image/png,image/jpeg,image/webp") }}
+        <small class="field-help">JPG, PNG או WEBP עד 10MB. התמונה נשמרת מחדש כ-JPG תקני לשיתוף יציב באייפון.</small>
+        {% for error in form.image.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      {{ form.submit(class="primary-button inline") }}
+    </form>
+  </section>
+
+  <aside class="panel invitation-preview">
+    <p class="eyebrow">תצוגה מקדימה</p>
+    {% if settings.image_filename %}
+      <img src="{{ url_for('invitations.invitation_image') }}?v={{ settings.updated_at.timestamp()|int }}" alt="תמונת ההזמנה">
+    {% else %}
+      <div class="empty-image"><span>💌</span><strong>עדיין לא הועלתה תמונה</strong></div>
+    {% endif %}
+    <p class="muted small-text">השיתוף בפועל יוצר קובץ PNG חדש דרך Canvas ושולח אותו יחד עם הטקסט, באותה שיטה שנבדקה ועבדה באייפון.</p>
+  </aside>
+</div>
+
+<section class="panel invitation-list-panel">
+  <div class="section-heading list-heading">
+    <div><p class="eyebrow">שליחה ומעקב</p><h2>רשימת מוזמנים</h2></div>
+  </div>
+  <form class="filter-bar" method="get">
+    <input name="q" value="{{ request.args.get('q','') }}" placeholder="חיפוש לפי שם או טלפון...">
+    <select name="state">
+      <option value="">הכול</option>
+      <option value="unsent" {% if request.args.get('state')=='unsent' %}selected{% endif %}>טרם נשלחה הזמנה</option>
+      <option value="sent" {% if request.args.get('state')=='sent' %}selected{% endif %}>נשלחה הזמנה</option>
+      <option value="pending" {% if request.args.get('state')=='pending' %}selected{% endif %}>טרם אישרו הגעה</option>
+    </select>
+    <button class="primary-button inline" type="submit">סינון</button>
+    <a class="text-button" href="{{ url_for('invitations.index') }}">ניקוי</a>
+  </form>
+
+  {% if guests %}
+  <div class="invitation-guest-list">
+    {% for guest in guests %}
+    <article class="invitation-guest-row" data-invitation-row="{{ guest.id }}">
+      <div class="guest-name">
+        <span class="avatar">{{ guest.first_name[:1] }}</span>
+        <div>
+          <strong>{{ guest.full_name }}</strong>
+          <small>{{ guest.phone or 'ללא טלפון' }} · הוזמנו {{ guest.invited_count }}</small>
+        </div>
+      </div>
+      <div class="send-state">
+        {% if guest.invitation_sent %}
+          <span class="status-pill confirmed">נשלחה ✓</span>
+          <small>{{ guest.invitation_attempts }} ניסיונות{% if guest.invitation_sent_at %} · {{ guest.invitation_sent_at.strftime('%d/%m %H:%M') }}{% endif %}</small>
+        {% else %}
+          <span class="status-pill pending">טרם נשלחה</span>
+        {% endif %}
+      </div>
+      <div class="invitation-actions">
+        <button
+          class="primary-button inline share-invitation-button"
+          type="button"
+          data-share-guest="{{ guest.id }}"
+          data-activity-type="{% if guest.invitation_sent %}reminder{% else %}sent{% endif %}"
+          {% if not settings.image_filename %}disabled title="יש להעלות תמונת הזמנה קודם"{% endif %}
+        >{% if guest.invitation_sent %}שליחת תזכורת{% else %}שליחת הזמנה{% endif %}</button>
+        <button class="secondary-button copy-invitation-button" type="button" data-copy-guest="{{ guest.id }}">העתקת טקסט</button>
+        <a class="icon-action" href="{{ url_for('rsvp.respond', token=guest.rsvp_token) }}" target="_blank" title="פתיחת RSVP">🔗</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><span>💌</span><h3>לא נמצאו מוזמנים</h3><p>שנה את הסינון או הוסף מוזמנים.</p></div>
+  {% endif %}
+</section>
+
+<div class="share-status" data-share-status hidden></div>
+<script>
+window.invitationConfig = {
+  csrfToken: {{ csrf_token()|tojson }},
+  shareDataUrl: {{ url_for('invitations.share_data', guest_id=0)|tojson }},
+  markSharedUrl: {{ url_for('invitations.mark_shared', guest_id=0)|tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/invitations.js') }}" defer></script>
+{% endblock %}

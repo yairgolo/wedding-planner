@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}הושבה | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header seating-page-header">
+  <div>
+    <p class="eyebrow">Sprint 4</p>
+    <h1>ניהול הושבה</h1>
+    <p class="muted">גררו מוזמנים לשולחנות במחשב, או השתמשו בבחירה מהירה במובייל.</p>
+  </div>
+  <div class="header-actions">
+    <a class="secondary-button inline" href="{{ url_for('seating.event_day') }}">🔎 מצב יום האירוע</a>
+    <a class="secondary-button inline" href="{{ url_for('seating.export_excel') }}">📊 ייצוא Excel</a>
+    <a class="primary-button inline" href="{{ url_for('seating.create_table') }}">＋ שולחן חדש</a>
+  </div>
+</section>
+
+<section class="guest-stats seating-stats">
+  <article><small>שולחנות</small><strong>{{ stats.tables }}</strong><span>נוצרו במערכת</span></article>
+  <article><small>סה״כ מקומות</small><strong>{{ stats.capacity }}</strong><span>קיבולת כוללת</span></article>
+  <article><small>משובצים</small><strong>{{ stats.seated }}</strong><span>מקומות ששובצו</span></article>
+  <article><small>ללא שולחן</small><strong>{{ stats.unseated }}</strong><span>מקומות שנותרו</span></article>
+</section>
+
+<section class="seating-toolbar panel">
+  <form method="get" class="seating-search-form">
+    <input type="search" name="q" value="{{ q }}" placeholder="חיפוש מוזמן, טלפון או קבוצה">
+    <button class="primary-button inline" type="submit">חיפוש</button>
+    {% if q %}<a class="text-button" href="{{ url_for('seating.index') }}">נקה</a>{% endif %}
+  </form>
+  <div class="seating-legend">
+    <span><i class="legend-dot empty"></i>פנוי</span>
+    <span><i class="legend-dot partial"></i>חלקי</span>
+    <span><i class="legend-dot full"></i>מלא</span>
+  </div>
+</section>
+
+<div class="seating-layout" data-seating-root data-assign-url="{{ url_for('seating.assign') }}" data-unassign-url="{{ url_for('seating.unassign') }}">
+  <aside class="panel unseated-panel">
+    <div class="section-heading">
+      <div><p class="eyebrow">ממתינים לשיבוץ</p><h2>ללא שולחן</h2></div>
+      <span class="count-badge">{{ unseated|length }}</span>
+    </div>
+    <p class="muted small-text">במחשב ניתן לגרור. בטלפון בוחרים שולחן מהרשימה.</p>
+    <div class="unseated-list" data-unseated-list>
+      {% for guest in unseated %}
+      <article class="seat-guest-card" draggable="true" data-guest-id="{{ guest.id }}" data-guest-name="{{ guest.full_name }}">
+        <div>
+          <strong>{{ guest.full_name }}</strong>
+          <small>{{ expected_seats(guest) }} מקומות{% if guest.family %} · {{ guest.family.name }}{% endif %}</small>
+        </div>
+        <span class="side-chip {{ guest.side }}">{{ {'groom':'חתן','bride':'כלה','shared':'משותף'}.get(guest.side, guest.side) }}</span>
+        <label class="mobile-table-picker">
+          <span>שיבוץ מהיר</span>
+          <select data-mobile-assign data-guest-id="{{ guest.id }}">
+            <option value="">בחרו שולחן</option>
+            {% for table in tables %}<option value="{{ table.id }}">{{ table.display_name }} — {{ table.available_seats }} פנויים</option>{% endfor %}
+          </select>
+        </label>
+      </article>
+      {% else %}
+      <div class="empty-state compact"><span>✓</span><h3>כולם שובצו</h3><p>אין כרגע מוזמנים ללא שולחן.</p></div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="seating-board" data-seating-board>
+    {% for table in tables %}
+    {% set state = 'full' if table.occupied_seats >= table.capacity else ('partial' if table.occupied_seats else 'empty') %}
+    <article class="table-card table-{{ table.shape }} {{ state }}" data-table-id="{{ table.id }}">
+      <header class="table-card-header">
+        <div>
+          <p class="eyebrow">{% if table.zone %}{{ table.zone }}{% else %}אזור לא הוגדר{% endif %}</p>
+          <h3>{{ table.display_name }}</h3>
+        </div>
+        <div class="table-actions">
+          <a href="{{ url_for('seating.edit_table', table_id=table.id) }}" aria-label="עריכת שולחן">✏️</a>
+          <form method="post" action="{{ url_for('seating.delete_table', table_id=table.id) }}" onsubmit="return confirm('למחוק את השולחן?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" aria-label="מחיקת שולחן">🗑️</button>
+          </form>
+        </div>
+      </header>
+      <div class="capacity-line"><strong>{{ table.occupied_seats }} / {{ table.capacity }}</strong><span>{{ table.available_seats }} פנויים</span></div>
+      <div class="occupancy-track"><span style="width: {{ table.occupancy_percent }}%"></span></div>
+      <div class="table-dropzone" data-dropzone>
+        {% for assignment in table.assignments|sort(attribute='guest.full_name') %}
+        <div class="assigned-guest" draggable="true" data-guest-id="{{ assignment.guest.id }}">
+          <div><strong>{{ assignment.guest.full_name }}</strong><small>{{ assignment.seat_count }} מקומות</small></div>
+          <button type="button" data-unassign data-guest-id="{{ assignment.guest.id }}" aria-label="הסרה מהשולחן">×</button>
+        </div>
+        {% else %}
+        <div class="drop-hint">גררו לכאן מוזמנים</div>
+        {% endfor %}
+      </div>
+      {% if table.notes %}<p class="table-notes">{{ table.notes }}</p>{% endif %}
+    </article>
+    {% else %}
+    <div class="panel empty-state seating-empty"><span>🪑</span><h3>עדיין אין שולחנות</h3><p>הוסיפו את השולחן הראשון כדי להתחיל את ההושבה.</p><a class="primary-button inline" href="{{ url_for('seating.create_table') }}">הוספת שולחן</a></div>
+    {% endfor %}
+  </section>
+</div>
+<div class="share-status" data-seating-status hidden></div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/seating.js') }}" defer></script>{% endblock %}

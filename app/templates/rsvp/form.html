@@ -1,1 +1,36 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>אישור הגעה</title><link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}"></head><body class="rsvp-body"><main class="rsvp-shell"><div class="rsvp-heart">♥</div><p class="eyebrow">{{ wedding.display_name }}</p><h1>שלום {{ guest.first_name }}</h1><p>אנחנו שמחים להזמין אותך לחגוג איתנו. נשמח לדעת אם תגיעו.</p><div class="rsvp-details">{% if wedding.event_date %}<span>📅 {{ wedding.event_date.strftime('%d.%m.%Y') }}</span>{% endif %}{% if wedding.venue_name %}<span>📍 {{ wedding.venue_name }}</span>{% endif %}<span>👥 הוזמנו {{ guest.invited_count }}</span></div><form method="post" class="rsvp-form">{{ form.hidden_tag() }}<label>{{ form.status.label }}{{ form.status() }}</label><label>{{ form.confirmed_count.label }}{{ form.confirmed_count(min=0,max=guest.invited_count) }}</label><label>{{ form.diet_notes.label }}{{ form.diet_notes() }}</label><label>{{ form.message.label }}{{ form.message(rows=3) }}</label>{% for field in form if field.errors %}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}{% endfor %}{{ form.submit(class_='primary-button') }}</form></main></body></html>
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>אישור הגעה</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="rsvp-body">
+  <main class="rsvp-shell">
+    {% if wedding.invitation_settings and wedding.invitation_settings.image_filename %}
+      <img class="rsvp-invitation-image" src="{{ url_for('invitations.invitation_image') }}" alt="הזמנה לחתונה">
+    {% else %}
+      <div class="rsvp-heart">♥</div>
+    {% endif %}
+    <p class="eyebrow">{{ wedding.display_name }}</p>
+    <h1>שלום {{ guest.first_name }}</h1>
+    <p>אנחנו שמחים להזמין אותך לחגוג איתנו. נשמח לדעת אם תגיעו.</p>
+    <div class="rsvp-details">
+      {% if wedding.event_date %}<span>📅 {{ wedding.event_date.strftime('%d.%m.%Y') }}</span>{% endif %}
+      {% if wedding.venue_name %}<span>📍 {{ wedding.venue_name }}</span>{% endif %}
+      {% if wedding.venue_address %}<span>{{ wedding.venue_address }}</span>{% endif %}
+      <span>👥 הוזמנו {{ guest.invited_count }}</span>
+    </div>
+    <form method="post" class="rsvp-form">
+      {{ form.hidden_tag() }}
+      <label>{{ form.status.label }}{{ form.status() }}</label>
+      <label>{{ form.confirmed_count.label }}{{ form.confirmed_count(min=0,max=guest.invited_count) }}</label>
+      <label>{{ form.diet_notes.label }}{{ form.diet_notes() }}</label>
+      <label>{{ form.message.label }}{{ form.message(rows=3) }}</label>
+      {% for field in form if field.errors %}{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}{% endfor %}
+      {{ form.submit(class_='primary-button') }}
+    </form>
+  </main>
+</body>
+</html>
