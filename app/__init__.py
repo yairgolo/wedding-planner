@@ -47,12 +47,15 @@ def create_app(config_name: str | None = None) -> Flask:
     from .auth.routes import auth_bp
     from .core.errors import errors_bp
     from .dashboard.routes import dashboard_bp
+    from .guests.routes import guests_bp, rsvp_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(guests_bp)
+    app.register_blueprint(rsvp_bp)
     app.register_blueprint(errors_bp)
 
-    from .models import User, Wedding  # noqa: F401
+    from .models import AuditLog, Family, Guest, User, Wedding  # noqa: F401
 
     configure_logging(app)
     register_commands(app)

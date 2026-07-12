@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}מוזמנים | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header guests-header">
+  <div><p class="eyebrow">ניהול מוזמנים</p><h1>רשימת המוזמנים</h1><p class="muted">חיפוש, סינון, RSVP וייצוא במקום אחד.</p></div>
+  <div class="header-actions"><a class="secondary-button" href="{{ url_for('guests.export_excel') }}">📊 ייצוא Excel</a><a class="primary-button inline" href="{{ url_for('guests.create') }}">＋ הוספת מוזמן</a></div>
+</section>
+<section class="guest-stats">
+  <article><small>סה״כ מוזמנים</small><strong>{{ stats.invited }}</strong><span>{{ stats.records }} רשומות</span></article>
+  <article><small>אישרו</small><strong>{{ stats.confirmed }}</strong><span>מגיעים בפועל</span></article>
+  <article><small>ממתינים</small><strong>{{ stats.pending }}</strong><span>כולל אולי</span></article>
+  <article><small>טרם נשלחה הזמנה</small><strong>{{ stats.unsent }}</strong><span>רשומות</span></article>
+</section>
+<form class="filter-bar" method="get">
+  <input name="q" value="{{ request.args.get('q','') }}" placeholder="חיפוש לפי שם, טלפון, משפחה...">
+  <select name="status"><option value="">כל הסטטוסים</option>{% for value,label in [('pending','ממתין'),('confirmed','מגיע'),('declined','לא מגיע'),('maybe','אולי')] %}<option value="{{ value }}" {% if request.args.get('status')==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <select name="side"><option value="">כל הצדדים</option>{% for value,label in [('groom','חתן'),('bride','כלה'),('shared','משותף')] %}<option value="{{ value }}" {% if request.args.get('side')==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <select name="sent"><option value="">הכול</option><option value="no" {% if request.args.get('sent')=='no' %}selected{% endif %}>לא נשלחה הזמנה</option><option value="yes" {% if request.args.get('sent')=='yes' %}selected{% endif %}>נשלחה הזמנה</option></select>
+  <label class="check-filter"><input type="checkbox" name="vip" value="1" {% if request.args.get('vip')=='1' %}checked{% endif %}> VIP</label>
+  <button class="primary-button inline" type="submit">סינון</button><a class="text-button" href="{{ url_for('guests.index') }}">ניקוי</a>
+</form>
+{% if guests %}
+<div class="guest-table-wrap"><table class="guest-table"><thead><tr><th>מוזמן</th><th>צד / קבוצה</th><th>כמות</th><th>RSVP</th><th>שולחן</th><th>הזמנה</th><th>פעולות</th></tr></thead><tbody>
+{% for guest in guests %}<tr><td><div class="guest-name"><span class="avatar">{{ guest.first_name[:1] }}</span><div><strong>{{ guest.full_name }} {% if guest.is_vip %}⭐{% endif %}</strong><small>{{ guest.phone or guest.email or 'ללא פרטי קשר' }}{% if guest.family %} · {{ guest.family.name }}{% endif %}</small></div></div></td><td><span class="badge">{{ side_labels[guest.side] }}</span><small>{{ guest.group_name or '' }}</small></td><td>{{ guest.confirmed_count }}/{{ guest.invited_count }}</td><td><span class="status-pill {{ guest.rsvp_status }}">{{ status_labels[guest.rsvp_status] }}</span></td><td>{{ guest.table_number or '—' }}</td><td>{% if guest.invitation_sent %}<span class="sent-ok">נשלחה ✓</span>{% else %}<form method="post" action="{{ url_for('guests.mark_sent', guest_id=guest.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="mini-button" type="submit">סמן כנשלחה</button></form>{% endif %}</td><td><div class="row-actions"><a href="{{ url_for('rsvp.respond', token=guest.rsvp_token) }}" target="_blank" title="קישור RSVP">🔗</a><a href="{{ url_for('guests.edit', guest_id=guest.id) }}" title="עריכה">✏️</a><form method="post" action="{{ url_for('guests.delete', guest_id=guest.id) }}" onsubmit="return confirm('להעביר את המוזמן לסל המחזור?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" title="מחיקה">🗑️</button></form></div></td></tr>{% endfor %}
+</tbody></table></div>
+<div class="guest-cards">{% for guest in guests %}<article class="guest-card"><div class="guest-card-top"><div class="guest-name"><span class="avatar">{{ guest.first_name[:1] }}</span><div><strong>{{ guest.full_name }} {% if guest.is_vip %}⭐{% endif %}</strong><small>{{ guest.phone or 'ללא טלפון' }}</small></div></div><span class="status-pill {{ guest.rsvp_status }}">{{ status_labels[guest.rsvp_status] }}</span></div><div class="guest-card-grid"><span>👥 {{ guest.confirmed_count }}/{{ guest.invited_count }}</span><span>🎯 {{ side_labels[guest.side] }}</span><span>🪑 {{ guest.table_number or 'ללא שולחן' }}</span><span>📨 {% if guest.invitation_sent %}נשלחה{% else %}לא נשלחה{% endif %}</span></div><div class="guest-card-actions"><a href="{{ url_for('guests.edit', guest_id=guest.id) }}">עריכה</a><a href="{{ url_for('rsvp.respond', token=guest.rsvp_token) }}" target="_blank">RSVP</a></div></article>{% endfor %}</div>
+{% else %}<div class="panel empty-state"><span>👥</span><h3>לא נמצאו מוזמנים</h3><p>הוסף את המוזמן הראשון או שנה את הסינון.</p><a class="primary-button inline" href="{{ url_for('guests.create') }}">הוספת מוזמן</a></div>{% endif %}
+<a class="floating-add" href="{{ url_for('guests.create') }}" aria-label="הוספת מוזמן">＋</a>
+{% endblock %}

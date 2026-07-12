@@ -65,3 +65,16 @@ docker compose up -d
 - Sprint 8: Export Center
 - Sprint 9: PWA
 - Sprint 10: Production hardening and deploy
+
+## Sprint 2 — Guests & RSVP
+
+המערכת כוללת כעת CRUD מלא למוזמנים, משפחות, חיפוש וסינון, קישור RSVP אישי, מעקב שליחת הזמנה וייצוא Excel.
+
+לאחר עדכון מ־Sprint 1 יש להריץ שוב:
+
+```bash
+pip install -r requirements.txt
+flask --app run.py init-db
+```
+
+`init-db` אינו מוחק נתונים קיימים; הוא יוצר את הטבלאות החדשות שחסרות.

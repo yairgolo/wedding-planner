@@ -24,7 +24,7 @@
       </div>
       <nav class="nav-list">
         <a class="nav-link active" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
-        <a class="nav-link disabled" href="#"><span>👥</span>מוזמנים<small>בקרוב</small></a>
+        <a class="nav-link {% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span>מוזמנים</a>
         <a class="nav-link disabled" href="#"><span>🪑</span>הושבה<small>בקרוב</small></a>
         <a class="nav-link disabled" href="#"><span>🛒</span>קניות<small>בקרוב</small></a>
         <a class="nav-link disabled" href="#"><span>🤝</span>ספקים<small>בקרוב</small></a>
@@ -49,8 +49,8 @@
 
     <nav class="bottom-nav" aria-label="ניווט תחתון">
       <a class="active" href="{{ url_for('dashboard.index') }}"><span>🏠</span><small>בית</small></a>
-      <a href="#"><span>👥</span><small>מוזמנים</small></a>
-      <button type="button" class="quick-add" aria-label="הוספה מהירה">＋</button>
+      <a class="{% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span><small>מוזמנים</small></a>
+      <a href="{{ url_for('guests.create') }}" class="quick-add" aria-label="הוספת מוזמן">＋</a>
       <a href="#"><span>📋</span><small>משימות</small></a>
       <a href="#"><span>⚙️</span><small>הגדרות</small></a>
     </nav>

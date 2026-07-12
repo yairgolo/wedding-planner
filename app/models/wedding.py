@@ -19,6 +19,13 @@ class Wedding(db.Model):
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
 
+    guests = db.relationship(
+        "Guest", back_populates="wedding", lazy="dynamic", cascade="all, delete-orphan"
+    )
+    families = db.relationship(
+        "Family", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
+
     @property
     def display_name(self) -> str:
         return f"{self.partner_one} ו{self.partner_two}"
