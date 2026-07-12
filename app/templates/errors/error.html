@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}שגיאה {{ code }}{% endblock %}
+{% block content %}
+<section class="error-page"><strong>{{ code }}</strong><h1>{{ message }}</h1><a class="primary-button inline" href="{{ url_for('dashboard.index') }}">חזרה לדשבורד</a></section>
+{% endblock %}
+{% block public_content %}
+<section class="error-page"><strong>{{ code }}</strong><h1>{{ message }}</h1><a class="primary-button inline" href="{{ url_for('auth.login') }}">חזרה לכניסה</a></section>
+{% endblock %}

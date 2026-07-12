@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#40513b">
+  <title>{% block title %}Wedding Planner{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <div class="app-shell" data-app-shell>
+    <header class="mobile-header">
+      <button class="icon-button" type="button" aria-label="פתיחת תפריט" data-menu-open>☰</button>
+      <div class="mobile-title">Wedding Planner</div>
+      <div class="avatar">{{ current_user.display_name[:1] }}</div>
+    </header>
+
+    <div class="menu-backdrop" data-menu-backdrop hidden></div>
+    <aside class="sidebar" data-sidebar aria-hidden="true">
+      <div class="brand">
+        <span class="brand-mark">♥</span>
+        <div><strong>Wedding Planner</strong><small>מרכז ניהול החתונה</small></div>
+      </div>
+      <nav class="nav-list">
+        <a class="nav-link active" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
+        <a class="nav-link disabled" href="#"><span>👥</span>מוזמנים<small>בקרוב</small></a>
+        <a class="nav-link disabled" href="#"><span>🪑</span>הושבה<small>בקרוב</small></a>
+        <a class="nav-link disabled" href="#"><span>🛒</span>קניות<small>בקרוב</small></a>
+        <a class="nav-link disabled" href="#"><span>🤝</span>ספקים<small>בקרוב</small></a>
+        <a class="nav-link disabled" href="#"><span>📋</span>משימות<small>בקרוב</small></a>
+      </nav>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nav-link logout" type="submit"><span>↪</span>התנתקות</button>
+      </form>
+    </aside>
+
+    <main class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="toast-stack">
+            {% for category, message in messages %}<div class="toast {{ category }}">{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <nav class="bottom-nav" aria-label="ניווט תחתון">
+      <a class="active" href="{{ url_for('dashboard.index') }}"><span>🏠</span><small>בית</small></a>
+      <a href="#"><span>👥</span><small>מוזמנים</small></a>
+      <button type="button" class="quick-add" aria-label="הוספה מהירה">＋</button>
+      <a href="#"><span>📋</span><small>משימות</small></a>
+      <a href="#"><span>⚙️</span><small>הגדרות</small></a>
+    </nav>
+  </div>
+  {% else %}
+    {% block public_content %}{% endblock %}
+  {% endif %}
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

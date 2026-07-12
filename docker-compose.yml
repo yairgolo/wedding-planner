@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    container_name: wedding-planner
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - wedding_instance:/app/instance
+      - wedding_uploads:/app/uploads
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  wedding_instance:
+  wedding_uploads:

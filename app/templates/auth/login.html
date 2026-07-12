@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}כניסה | Wedding Planner{% endblock %}
+{% block public_content %}
+<main class="login-page">
+  <section class="login-card">
+    <div class="login-logo">♥</div>
+    <p class="eyebrow">Wedding Planner</p>
+    <h1>ניהול החתונה במקום אחד</h1>
+    <p class="muted">מוזמנים, הושבה, ספקים, קניות ועוד.</p>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <label>{{ form.email.label }}{{ form.email(autocomplete="email", inputmode="email") }}</label>
+      {% for error in form.email.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      <label>{{ form.password.label }}{{ form.password(autocomplete="current-password") }}</label>
+      {% for error in form.password.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      <label class="checkbox-row">{{ form.remember() }}<span>{{ form.remember.label.text }}</span></label>
+      {{ form.submit(class_="primary-button") }}
+    </form>
+  </section>
+</main>
+{% endblock %}
