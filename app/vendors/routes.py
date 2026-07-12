@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import AuditLog, Vendor, Wedding
+from app.models import AuditLog, Document, Task, Vendor, Wedding
 from app.services.vendor_budget import sync_vendor_to_budget
 
 from .forms import VendorForm
@@ -115,6 +115,40 @@ def index():
         category_labels=CATEGORY_LABELS,
         status_labels=STATUS_LABELS,
         q=q,
+    )
+
+
+@vendors_bp.get("/<int:vendor_id>")
+@login_required
+def detail(vendor_id: int):
+    wedding = current_wedding()
+    vendor = db.get_or_404(Vendor, vendor_id)
+    if vendor.wedding_id != wedding.id or vendor.is_deleted:
+        abort(404)
+    tasks = db.session.scalars(
+        db.select(Task).where(
+            Task.wedding_id == wedding.id,
+            Task.related_vendor_id == vendor.id,
+            Task.deleted_at.is_(None),
+        ).order_by(Task.status, Task.due_date)
+    ).all()
+    documents = db.session.scalars(
+        db.select(Document).where(
+            Document.wedding_id == wedding.id,
+            Document.vendor_id == vendor.id,
+            Document.deleted_at.is_(None),
+        ).order_by(Document.created_at.desc())
+    ).all()
+    activity = db.session.scalars(
+        db.select(AuditLog).where(
+            AuditLog.wedding_id == wedding.id,
+            AuditLog.entity_type == "vendor",
+            AuditLog.entity_id == str(vendor.id),
+        ).order_by(AuditLog.created_at.desc()).limit(10)
+    ).all()
+    return render_template(
+        "vendors/detail.html", vendor=vendor, tasks=tasks, documents=documents, activity=activity,
+        category_labels=CATEGORY_LABELS, status_labels=STATUS_LABELS
     )
 
 

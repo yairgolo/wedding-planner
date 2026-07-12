@@ -51,11 +51,11 @@
     <main class="main-content">
       <header class="desktop-command-bar">
         <form action="{{ url_for('search.index') }}" method="get" class="command-search">
-          <span>⌕</span><input name="q" type="search" placeholder="חיפוש מוזמן, ספק, משימה או מסמך..." aria-label="חיפוש בכל המערכת">
-          <kbd>Ctrl K</kbd>
+          <span>⌕</span><input name="q" type="search" autocomplete="off" placeholder="חיפוש מוזמן, ספק, משימה או מסמך..." aria-label="חיפוש בכל המערכת" data-global-search>
+          <kbd>Ctrl K</kbd><div class="search-popover" data-search-popover hidden></div>
         </form>
         <div class="command-actions">
-          <a class="command-icon" href="{{ url_for('notifications.index') }}" aria-label="התראות">🔔</a>
+          <a class="command-icon notification-command" href="{{ url_for('notifications.index') }}" aria-label="התראות">🔔{% if global_notification_count %}<b>{{ global_notification_count }}</b>{% endif %}</a>
           <button class="command-icon command-add" type="button" data-quick-add-open aria-label="הוספה מהירה">＋</button>
           <a class="command-profile" href="{{ url_for('settings.wedding_profile') }}"><span class="avatar">{{ current_user.display_name[:1] }}</span><strong>{{ current_user.display_name }}</strong></a>
         </div>

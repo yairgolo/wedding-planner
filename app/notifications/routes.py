@@ -48,3 +48,7 @@ def index():
     wedding = db.session.scalar(db.select(Wedding).order_by(Wedding.id).limit(1))
     items = build_notifications(wedding) if wedding else []
     return render_template("notifications/index.html", items=items)
+
+
+def notification_count(wedding) -> int:
+    return len(build_notifications(wedding)) if wedding else 0

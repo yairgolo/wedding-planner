@@ -9,6 +9,12 @@ class GuestImportForm(FlaskForm):
         validators=[FileRequired(), FileAllowed(["xlsx", "csv"], "יש להעלות Excel או CSV")],
     )
     duplicate_mode = SelectField(
-        "טיפול בכפילויות", choices=[("skip", "דלג לפי מספר טלפון"), ("import", "ייבא בכל מקרה")]
+        "טיפול ברשומות קיימות",
+        choices=[
+            ("update", "עדכן לפי UUID / מזהה / טלפון (מומלץ)"),
+            ("skip", "דלג על רשומות קיימות לפי UUID / מזהה / טלפון"),
+            ("import", "ייבא כרשומות חדשות כאשר אין UUID או מזהה"),
+        ],
+        default="update",
     )
     submit = SubmitField("ייבוא מוזמנים")

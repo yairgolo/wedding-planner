@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ vendor.name }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header">
+ <div><p class="eyebrow">כרטיס ספק מחובר</p><h1>{{ vendor.name }}</h1><p class="muted">{{ category_labels.get(vendor.category, vendor.category) }} · {{ status_labels.get(vendor.status, vendor.status) }}</p></div>
+ <div class="header-actions"><a class="secondary-button" href="{{ url_for('vendors.index') }}">חזרה לספקים</a><a class="primary-button inline" href="{{ url_for('vendors.edit', vendor_id=vendor.id) }}">עריכת ספק</a></div>
+</section>
+<section class="vendor-detail-hero panel">
+ <div><span class="status-badge {{ vendor.status }}">{{ status_labels.get(vendor.status, vendor.status) }}</span><h2>{{ vendor.contact_name or 'איש קשר לא הוגדר' }}</h2><p>{{ vendor.phone or '' }}{% if vendor.email %} · {{ vendor.email }}{% endif %}</p></div>
+ <div class="vendor-detail-money"><small>סוכם</small><strong>₪{{ '{:,.0f}'.format((vendor.agreed_amount or 0)|float) }}</strong><small>שולם ₪{{ '{:,.0f}'.format((vendor.paid_amount or 0)|float) }} · נותר ₪{{ '{:,.0f}'.format(vendor.balance|float) }}</small></div>
+</section>
+<section class="relations-grid">
+ <article class="panel"><div class="panel-heading"><div><p class="eyebrow">כספים</p><h2>תשלום וחוזה</h2></div></div><div class="relation-status-list"><p><span>{% if vendor.contract_signed %}✓{% else %}○{% endif %}</span> חוזה {% if vendor.contract_signed %}נחתם{% else %}עדיין לא נחתם{% endif %}</p><p><span>{% if vendor.balance == 0 %}✓{% else %}○{% endif %}</span> יתרה ₪{{ '{:,.0f}'.format(vendor.balance|float) }}</p><p><span>📅</span> תשלום הבא: {% if vendor.next_payment_date %}{{ vendor.next_payment_date.strftime('%d/%m/%Y') }}{% else %}לא הוגדר{% endif %}</p></div></article>
+ <article class="panel"><div class="panel-heading"><div><p class="eyebrow">קשרים</p><h2>משימות לספק</h2></div><a class="text-button" href="{{ url_for('tasks.create') }}">＋ משימה</a></div><div class="relation-list">{% for task in tasks %}<a href="{{ url_for('tasks.edit', task_id=task.id) }}"><strong>{{ task.title }}</strong><small>{{ task.due_date.strftime('%d/%m/%Y') if task.due_date else 'ללא תאריך' }}</small></a>{% else %}<div class="empty-mini">אין משימות מקושרות.</div>{% endfor %}</div></article>
+ <article class="panel"><div class="panel-heading"><div><p class="eyebrow">קבצים</p><h2>מסמכים</h2></div><a class="text-button" href="{{ url_for('documents.create') }}">＋ מסמך</a></div><div class="relation-list">{% for document in documents %}<a href="{{ url_for('documents.download', document_id=document.id) }}"><strong>📂 {{ document.title }}</strong><small>{{ document.original_filename }}</small></a>{% else %}<div class="empty-mini">אין מסמכים מקושרים.</div>{% endfor %}</div></article>
+ <article class="panel"><div class="panel-heading"><div><p class="eyebrow">היסטוריה</p><h2>פעילות אחרונה</h2></div></div><div class="relation-list">{% for log in activity %}<div><strong>{{ log.description }}</strong><small>{{ log.created_at.strftime('%d/%m/%Y · %H:%M') }}</small></div>{% else %}<div class="empty-mini">אין פעילות מתועדת.</div>{% endfor %}</div></article>
+</section>
+{% endblock %}

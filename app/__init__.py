@@ -110,6 +110,13 @@ def create_app(config_name: str | None = None) -> Flask:
         Wedding,
     )
 
+    @app.context_processor
+    def inject_command_center():
+        from .notifications.routes import notification_count
+
+        wedding = db.session.scalar(db.select(Wedding).order_by(Wedding.id).limit(1))
+        return {"global_notification_count": notification_count(wedding)}
+
     configure_logging(app)
     register_commands(app)
     return app

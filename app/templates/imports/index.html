@@ -1,4 +1,31 @@
-{% extends "base.html" %}{% block title %}מרכז ייבוא | Wedding Planner{% endblock %}{% block content %}
-<section class="page-header"><div><p class="eyebrow">העברת נתונים בקלות</p><h1>📥 מרכז ייבוא</h1><p class="muted">ייבוא מוזמנים מקובץ Excel או CSV. הכותרות יכולות להיות בעברית או באנגלית.</p></div></section>
-<form method="post" enctype="multipart/form-data" class="panel import-card">{{ form.hidden_tag() }}<label>{{ form.file.label }}{{ form.file(class_="app-input") }}</label><label>{{ form.duplicate_mode.label }}{{ form.duplicate_mode(class_="app-input") }}</label><div class="import-help"><strong>עמודות נתמכות:</strong><p>שם / שם פרטי, שם משפחה, טלפון, אימייל, צד, קבוצה, כמות.</p></div>{{ form.submit(class_="primary-button submit-button") }}</form>
+{% extends "base.html" %}
+{% block title %}מרכז ייבוא | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Excel Round Trip</p>
+    <h1>📥 מרכז ייבוא</h1>
+    <p class="muted">אפשר לייצא את רשימת המוזמנים, לערוך אותה באקסל ולהעלות את אותו הקובץ בחזרה.</p>
+  </div>
+  <div class="header-actions">
+    <a class="secondary-button inline" href="{{ url_for('guests.export_excel') }}">📊 הורדת קובץ מוזמנים</a>
+  </div>
+</section>
+<form method="post" enctype="multipart/form-data" class="panel import-card">
+  {{ form.hidden_tag() }}
+  <label>{{ form.file.label }}{{ form.file(class_="app-input") }}</label>
+  <label>{{ form.duplicate_mode.label }}{{ form.duplicate_mode(class_="app-input") }}</label>
+  <div class="import-help">
+    <strong>ייבוא סלחני:</strong>
+    <p>מייל, טלפון ושדות נוספים יכולים להישאר ריקים. שדה חסר לא יעצור את הקובץ; בסיום יוצג דו״ח אזהרות.</p>
+    <strong>הדרך המומלצת:</strong>
+    <ol>
+      <li>ייצא את רשימת המוזמנים.</li>
+      <li>ערוך או הוסף שורות בגיליון ״מוזמנים״.</li>
+      <li>אל תשנה UUID או מזהה מערכת של מוזמנים קיימים.</li>
+      <li>העלה את אותו קובץ — קיימים יעודכנו וחדשים יתווספו.</li>
+    </ol>
+  </div>
+  {{ form.submit(class_="primary-button submit-button") }}
+</form>
 {% endblock %}

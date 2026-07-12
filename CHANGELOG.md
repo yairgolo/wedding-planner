@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.4 — Smart Experience
+
+- Added instant global search results in the command bar.
+- Added notification count badge.
+- Added family-based guest view and RSVP progress.
+- Added connected vendor detail pages with payments, tasks, documents, and activity.
+- Added upcoming milestones to the dashboard.
+- Added UI motion and relation cards.
+
 ## 0.8.2 — Mobile navigation polish
 
 - Removed the crowded mobile bottom navigation.
@@ -82,3 +91,12 @@
 - Added recent activity directly to the dashboard.
 - Added paid, committed and remaining budget figures.
 - Improved empty states, mobile spacing, hover feedback and dashboard responsiveness.
+
+## 0.8.3 — Smart Data / Excel Round Trip
+
+- Guest Excel exports can be imported back into the system.
+- Existing guests update by UUID/system ID, with phone fallback.
+- New spreadsheet rows create new guests.
+- Missing phone, email, family, table and optional fields no longer block import.
+- Import completes partially and shows a detailed warning report.
+- Added stable headers, dropdown validation, frozen header and protected system identifiers.

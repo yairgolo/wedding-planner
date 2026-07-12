@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}תוצאות ייבוא | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div><p class="eyebrow">{{ filename }}</p><h1>תוצאות הייבוא</h1><p class="muted">הקובץ עובד באופן סלחני: כל שורה שניתן היה לשמור נשמרה.</p></div>
+  <div class="header-actions"><a class="primary-button inline" href="{{ url_for('guests.index') }}">לרשימת המוזמנים</a><a class="secondary-button inline" href="{{ url_for('imports.index') }}">ייבוא נוסף</a></div>
+</section>
+<div class="stat-grid import-result-stats">
+  <article class="stat-card"><span>נוספו</span><strong>{{ result.created }}</strong></article>
+  <article class="stat-card"><span>עודכנו</span><strong>{{ result.updated }}</strong></article>
+  <article class="stat-card"><span>דולגו</span><strong>{{ result.skipped }}</strong></article>
+  <article class="stat-card"><span>אזהרות</span><strong>{{ result.warning_count }}</strong></article>
+</div>
+<section class="panel">
+  <h2>אזהרות</h2>
+  {% if result.warnings %}
+    <div class="import-warning-list">
+      {% for warning in result.warnings[:200] %}
+        <div class="import-warning"><strong>שורה {{ warning.row_number }}</strong><span>{{ warning.message }}</span></div>
+      {% endfor %}
+      {% if result.warnings|length > 200 %}<p class="muted">מוצגות 200 האזהרות הראשונות מתוך {{ result.warnings|length }}.</p>{% endif %}
+    </div>
+  {% else %}
+    <div class="empty-state"><strong>הקובץ יובא ללא אזהרות 🎉</strong></div>
+  {% endif %}
+</section>
+{% endblock %}

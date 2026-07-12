@@ -16,7 +16,6 @@ from app.models import (
     Wedding,
 )
 
-
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
@@ -144,7 +143,11 @@ def index():
 
     readiness_details = [
         ("תאריך חתונה", bool(wedding and wedding.event_date), "settings.wedding_profile"),
-        ("אולם וכתובת", bool(wedding and wedding.venue_name and wedding.venue_address), "settings.wedding_profile"),
+        (
+            "אולם וכתובת",
+            bool(wedding and wedding.venue_name and wedding.venue_address),
+            "settings.wedding_profile",
+        ),
         ("רשימת מוזמנים", invited > 0, "guests.index"),
         ("שליחת הזמנות", invited > 0 and invitation_unsent == 0, "invitations.index"),
         ("אישורי הגעה", invited > 0 and pending == 0, "guests.index"),
@@ -153,7 +156,10 @@ def index():
         ("חוזי ספקים", bool(vendors) and unsigned_contracts == 0, "vendors.index"),
     ]
     health_score = round(
-        (sum(1 for _label, complete, _endpoint in readiness_details if complete) / len(readiness_details))
+        (
+            sum(1 for _label, complete, _endpoint in readiness_details if complete)
+            / len(readiness_details)
+        )
         * 100
     )
 
@@ -168,7 +174,9 @@ def index():
 
     attention_items = []
     if invitation_unsent:
-        attention_items.append(("💌", f"לשלוח הזמנה ל־{invitation_unsent} מוזמנים", "invitations.index"))
+        attention_items.append(
+            ("💌", f"לשלוח הזמנה ל־{invitation_unsent} מוזמנים", "invitations.index")
+        )
     if pending:
         attention_items.append(("⏳", f"{pending} מוזמנים עדיין לא אישרו", "guests.index"))
     if unseated:
@@ -179,6 +187,11 @@ def index():
         attention_items.append(
             ("💰", f"נותרו ₪{float(vendor_balance):,.0f} לתשלום לספקים", "vendors.index")
         )
+
+    upcoming_milestones = sorted(
+        [task for task in tasks if task.status != "done" and task.due_date],
+        key=lambda task: task.due_date,
+    )[:4]
 
     urgent_tasks = sorted(
         [task for task in tasks if task.status != "done"],
@@ -195,6 +208,7 @@ def index():
         module_progress=module_progress,
         attention_items=attention_items[:5],
         recent_activity=recent_activity,
+        upcoming_milestones=upcoming_milestones,
     )
 
 

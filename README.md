@@ -100,3 +100,15 @@ New routes:
 - `/documents` — secure document uploads and downloads
 - `/activity` — recent system activity
 - `/trash` — restore softly deleted records
+
+## Sprint 8.3 — Excel Round Trip
+
+רשימת המוזמנים ניתנת לייצוא, עריכה וייבוא חוזר:
+
+1. הורד `wedding-guests-roundtrip.xlsx` מעמוד המוזמנים.
+2. ערוך רשומות קיימות או הוסף שורות חדשות בגיליון `מוזמנים`.
+3. אל תשנה `UUID` או `מזהה מערכת` של רשומות קיימות.
+4. העלה את הקובץ דרך `/imports` במצב עדכון.
+
+שדות ריקים כגון טלפון, אימייל, משפחה או שולחן אינם עוצרים את הייבוא. ערכים
+שלא ניתן לפרש מקבלים ברירת מחדל ומופיעים בדוח אזהרות לאחר הייבוא.

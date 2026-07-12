@@ -76,4 +76,32 @@
       }
     }
   });
+
+  const globalSearch = document.querySelector('[data-global-search]');
+  const searchPopover = document.querySelector('[data-search-popover]');
+  let searchTimer;
+  if (globalSearch && searchPopover) {
+    const hideResults = () => { searchPopover.hidden = true; searchPopover.innerHTML = ''; };
+    globalSearch.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = globalSearch.value.trim();
+      if (q.length < 2) { hideResults(); return; }
+      searchTimer = setTimeout(async () => {
+        try {
+          const response = await fetch(`/search/api?q=${encodeURIComponent(q)}`, {credentials: 'same-origin'});
+          const payload = await response.json();
+          if (!payload.results.length) { searchPopover.innerHTML = '<div class="search-empty">לא נמצאו תוצאות</div>'; }
+          else { searchPopover.innerHTML = payload.results.map((item) => `<a href="${item.url}"><span>${item.icon}</span><div><strong>${item.title}</strong><small>${item.type} · ${item.subtitle || ''}</small></div></a>`).join(''); }
+          searchPopover.hidden = false;
+        } catch (_error) { hideResults(); }
+      }, 180);
+    });
+    globalSearch.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') hideResults();
+    });
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.command-search')) hideResults();
+    });
+  }
+
 })();

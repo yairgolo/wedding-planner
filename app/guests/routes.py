@@ -8,10 +8,21 @@ from flask_login import current_user, login_required
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import AuditLog, Family, Guest, Wedding
+from app.services.guest_roundtrip import (
+    DIET_TO_LABEL,
+    EXPORT_SCHEMA_VERSION,
+    SIDE_TO_LABEL,
+    STATUS_TO_LABEL,
+    guest_to_row,
+)
+from app.services.guest_roundtrip import (
+    HEADERS as ROUNDTRIP_HEADERS,
+)
 
 from .forms import FamilyForm, GuestForm, RSVPForm
 
@@ -66,6 +77,7 @@ def index():
     side = request.args.get("side", "").strip()
     vip = request.args.get("vip", "").strip()
     sent = request.args.get("sent", "").strip()
+    view = request.args.get("view", "list").strip()
 
     stmt = db.select(Guest).where(Guest.wedding_id == wedding.id, Guest.deleted_at.is_(None))
     if q:
@@ -105,6 +117,54 @@ def index():
         "declined": sum(g.invited_count for g in all_active if g.rsvp_status == "declined"),
         "unsent": sum(1 for g in all_active if not g.invitation_sent),
     }
+    family_groups = []
+    if view == "family":
+        grouped = {}
+        singles = []
+        for guest in guests:
+            key = guest.family.name if guest.family else (guest.group_name or "")
+            if key:
+                grouped.setdefault(key, []).append(guest)
+            else:
+                singles.append(guest)
+        for name, members in sorted(grouped.items(), key=lambda pair: pair[0]):
+            family_groups.append({
+                "name": name,
+                "members": members,
+                "invited": sum(member.invited_count for member in members),
+                "confirmed": sum(
+                    member.confirmed_count
+                    for member in members
+                    if member.rsvp_status == "confirmed"
+                ),
+                "pending": sum(
+                    member.invited_count
+                    for member in members
+                    if member.rsvp_status in {"pending", "maybe"}
+                ),
+                "tables": sorted(
+                    {member.table_number for member in members if member.table_number}
+                ),
+            })
+        if singles:
+            family_groups.append({
+                "name": "מוזמנים ללא משפחה", "members": singles,
+                "invited": sum(member.invited_count for member in singles),
+                "confirmed": sum(
+                    member.confirmed_count
+                    for member in singles
+                    if member.rsvp_status == "confirmed"
+                ),
+                "pending": sum(
+                    member.invited_count
+                    for member in singles
+                    if member.rsvp_status in {"pending", "maybe"}
+                ),
+                "tables": sorted(
+                    {member.table_number for member in singles if member.table_number}
+                ),
+            })
+
     return render_template(
         "guests/index.html",
         wedding=wedding,
@@ -113,6 +173,8 @@ def index():
         status_labels=STATUS_LABELS,
         side_labels=SIDE_LABELS,
         q=q,
+        view=view,
+        family_groups=family_groups,
     )
 
 
@@ -205,61 +267,60 @@ def create_family():
 @guests_bp.get("/export.xlsx")
 @login_required
 def export_excel():
+    """Export a workbook that can be edited and imported back without data loss."""
     wedding = current_wedding()
     guests = db.session.scalars(
         db.select(Guest)
         .where(Guest.wedding_id == wedding.id, Guest.deleted_at.is_(None))
         .order_by(Guest.last_name, Guest.first_name)
     ).all()
+
     wb = Workbook()
     ws = wb.active
     ws.title = "מוזמנים"
     ws.sheet_view.rightToLeft = True
-    headers = [
-        "שם",
-        "טלפון",
-        "אימייל",
-        "צד",
-        "קבוצה",
-        "משפחה",
-        "הוזמנו",
-        "אישרו",
-        "סטטוס",
-        "VIP",
-        "תזונה",
-        "שולחן",
-        "הזמנה נשלחה",
-        "הערות",
-    ]
-    ws.append(headers)
+    ws.freeze_panes = "A2"
+    ws.append(ROUNDTRIP_HEADERS)
+
     header_fill = PatternFill("solid", fgColor="40513B")
     for cell in ws[1]:
         cell.font = Font(color="FFFFFF", bold=True)
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
     for guest in guests:
-        ws.append(
-            [
-                guest.full_name,
-                guest.phone or "",
-                guest.email or "",
-                SIDE_LABELS.get(guest.side, guest.side),
-                guest.group_name or "",
-                guest.family.name if guest.family else "",
-                guest.invited_count,
-                guest.confirmed_count,
-                STATUS_LABELS.get(guest.rsvp_status, guest.rsvp_status),
-                "כן" if guest.is_vip else "לא",
-                DIET_LABELS.get(guest.diet, guest.diet),
-                guest.table_number or "",
-                "כן" if guest.invitation_sent else "לא",
-                guest.notes or "",
-            ]
-        )
-    ws.auto_filter.ref = ws.dimensions
-    ws.freeze_panes = "A2"
-    for idx, width in enumerate([24, 16, 28, 12, 16, 20, 10, 10, 14, 8, 16, 12, 16, 30], start=1):
+        ws.append(guest_to_row(guest))
+
+    # System identifiers are visually separated. They remain editable so users can
+    # freely append new rows in Excel; the importer never trusts them across weddings.
+    system_fill = PatternFill("solid", fgColor="E7E2D8")
+    for row in ws.iter_rows(min_row=2):
+        row[0].fill = system_fill
+        row[1].fill = system_fill
+
+    widths = [14, 38, 18, 18, 17, 28, 12, 18, 20, 10, 10, 14, 8, 18, 24, 12, 16, 36]
+    for idx, width in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = width
+
+    ws.auto_filter.ref = ws.dimensions
+    ws.row_dimensions[1].height = 28
+    # Friendly dropdown values keep edited workbooks compatible with import.
+    validations = [
+        ("G", list(SIDE_TO_LABEL.values())),
+        ("L", list(STATUS_TO_LABEL.values())),
+        ("M", ["כן", "לא"]),
+        ("N", list(DIET_TO_LABEL.values())),
+        ("Q", ["כן", "לא"]),
+    ]
+    max_row = max(ws.max_row + 1000, 1001)
+    for column, options in validations:
+        formula = '"' + ",".join(options) + '"'
+        validation = DataValidation(type="list", formula1=formula, allow_blank=True)
+        validation.error = "יש לבחור ערך מהרשימה"
+        validation.errorTitle = "ערך לא מוכר"
+        ws.add_data_validation(validation)
+        validation.add(f"{column}2:{column}{max_row}")
+
     summary = wb.create_sheet("סיכום")
     summary.sheet_view.rightToLeft = True
     summary.append(["מדד", "כמות"])
@@ -268,13 +329,25 @@ def export_excel():
     summary.append(
         ["סה״כ מאשרים", sum(g.confirmed_count for g in guests if g.rsvp_status == "confirmed")]
     )
+    for cell in summary[1]:
+        cell.font = Font(color="FFFFFF", bold=True)
+        cell.fill = header_fill
+    summary.column_dimensions["A"].width = 25
+    summary.column_dimensions["B"].width = 15
+
+    meta = wb.create_sheet("_מערכת")
+    meta.sheet_state = "hidden"
+    meta.append(["schema", EXPORT_SCHEMA_VERSION])
+    meta.append(["wedding_id", wedding.id])
+    meta.append(["instructions", "Do not delete the UUID column for existing guests."])
+
     output = BytesIO()
     wb.save(output)
     output.seek(0)
     return send_file(
         output,
         as_attachment=True,
-        download_name="wedding-guests.xlsx",
+        download_name="wedding-guests-roundtrip.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 

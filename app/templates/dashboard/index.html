@@ -97,6 +97,16 @@
     </div>
   </article>
 
+
+  <article class="panel milestones-panel">
+    <div class="panel-heading"><div><p class="eyebrow">הדברים הבאים ביומן</p><h2>ימים עד...</h2></div><a class="text-button" href="{{ url_for('tasks.index') }}">לכל המשימות</a></div>
+    <div class="milestone-list">
+      {% for task in upcoming_milestones %}
+      <a href="{{ url_for('tasks.edit', task_id=task.id) }}"><div><strong>{{ task.title }}</strong><small>{{ task.due_date.strftime('%d/%m/%Y') }}</small></div><em>{% set days=(task.due_date - today).days if today is defined else none %}{{ task.due_date.strftime('%d/%m') }}</em></a>
+      {% else %}<div class="empty-mini">הוסיפו תאריכי יעד למשימות כדי לראות את האירועים הקרובים.</div>{% endfor %}
+    </div>
+  </article>
+
   <article class="panel activity-preview-panel">
     <div class="panel-heading"><div><p class="eyebrow">מה השתנה לאחרונה</p><h2>פעילות אחרונה</h2></div><a class="text-button" href="{{ url_for('activity.index') }}">לכל הפעילות</a></div>
     <div class="dashboard-activity-list">

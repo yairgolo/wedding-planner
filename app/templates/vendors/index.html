@@ -76,7 +76,7 @@
       {% if vendor.website_url %}<a href="{{ vendor.website_url }}" target="_blank" rel="noopener" aria-label="אתר">🔗</a>{% endif %}
       <form method="post" action="{{ url_for('vendors.favorite', vendor_id=vendor.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="מועדף">{% if vendor.is_favorite %}★{% else %}☆{% endif %}</button></form>
       {% if vendor.balance > 0 %}<form method="post" action="{{ url_for('vendors.mark_paid', vendor_id=vendor.id) }}" onsubmit="return confirm('לסמן את הספק כשולם במלואו?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="סמן כשולם">₪</button></form>{% endif %}
-      <a href="{{ url_for('vendors.edit', vendor_id=vendor.id) }}" aria-label="עריכה">✏️</a>
+      <a href="{{ url_for('vendors.detail', vendor_id=vendor.id) }}" aria-label="כרטיס ספק">👁️</a><a href="{{ url_for('vendors.edit', vendor_id=vendor.id) }}" aria-label="עריכה">✏️</a>
       <form method="post" action="{{ url_for('vendors.delete', vendor_id=vendor.id) }}" onsubmit="return confirm('להעביר את הספק לסל המחזור?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="מחיקה">🗑️</button></form>
     </div>
   </article>
