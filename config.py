@@ -18,7 +18,7 @@ class BaseConfig:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
-    WTF_CSRF_TIME_LIMIT = timedelta(hours=8)
+    WTF_CSRF_TIME_LIMIT = 8 * 60 * 60
     UPLOAD_FOLDER = BASE_DIR / "uploads"
 
 
