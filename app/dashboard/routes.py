@@ -4,7 +4,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required
 
 from app.extensions import db
-from app.models import BudgetItem, Guest, ShoppingItem, Wedding
+from app.models import BudgetItem, Guest, ShoppingItem, Task, Vendor, Wedding
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -16,6 +16,8 @@ def index():
     guests = []
     shopping = []
     budget = []
+    tasks = []
+    vendors = []
     if wedding:
         guests = db.session.scalars(
             db.select(Guest).where(Guest.wedding_id == wedding.id, Guest.deleted_at.is_(None))
@@ -30,12 +32,19 @@ def index():
                 BudgetItem.wedding_id == wedding.id, BudgetItem.deleted_at.is_(None)
             )
         ).all()
+        tasks = db.session.scalars(
+            db.select(Task).where(Task.wedding_id == wedding.id, Task.deleted_at.is_(None))
+        ).all()
+        vendors = db.session.scalars(
+            db.select(Vendor).where(Vendor.wedding_id == wedding.id, Vendor.deleted_at.is_(None))
+        ).all()
     metrics = {
         "guests": sum(g.invited_count for g in guests),
         "confirmed": sum(g.confirmed_count for g in guests if g.rsvp_status == "confirmed"),
         "pending": sum(g.invited_count for g in guests if g.rsvp_status in {"pending", "maybe"}),
         "declined": sum(g.invited_count for g in guests if g.rsvp_status == "declined"),
-        "tasks": 0,
+        "tasks": sum(1 for task in tasks if task.status != "done"),
+        "overdue_tasks": sum(1 for task in tasks if task.is_overdue),
         "unseated": sum(
             (
                 g.confirmed_count
@@ -53,8 +62,23 @@ def index():
             (item.paid_amount or Decimal("0") for item in budget if item.status != "cancelled"),
             Decimal("0"),
         ),
+        "vendors": len(vendors),
+        "vendor_balance": sum(
+            (vendor.balance for vendor in vendors if vendor.status != "cancelled"), Decimal("0")
+        ),
+        "unsigned_contracts": sum(
+            1
+            for vendor in vendors
+            if vendor.status in {"booked", "completed"} and not vendor.contract_signed
+        ),
     }
-    return render_template("dashboard/index.html", wedding=wedding, metrics=metrics)
+    urgent_tasks = sorted(
+        [task for task in tasks if task.status != "done"],
+        key=lambda task: (task.due_date is None, task.due_date, task.priority != "urgent"),
+    )[:5]
+    return render_template(
+        "dashboard/index.html", wedding=wedding, metrics=metrics, urgent_tasks=urgent_tasks
+    )
 
 
 @dashboard_bp.get("/health")

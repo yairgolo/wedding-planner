@@ -35,6 +35,12 @@ class Wedding(db.Model):
     budget_items = db.relationship(
         "BudgetItem", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
     )
+    vendors = db.relationship(
+        "Vendor", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
+    tasks = db.relationship(
+        "Task", back_populates="wedding", lazy="selectin", cascade="all, delete-orphan"
+    )
     invitation_settings = db.relationship(
         "InvitationSettings",
         back_populates="wedding",

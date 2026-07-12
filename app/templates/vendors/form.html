@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">ספקים</p><h1>{{ title }}</h1><p class="muted">פרטי קשר, חוזה ותשלומים.</p></div></section>
+<section class="panel form-panel">
+  <form method="post" class="form-grid">
+    {{ form.hidden_tag() }}
+    <label class="full-field">{{ form.name.label }}{{ form.name(placeholder="למשל: ישראל ישראלי צילום") }}{% for e in form.name.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+    <label>{{ form.category.label }}{{ form.category() }}</label>
+    <label>{{ form.status.label }}{{ form.status() }}</label>
+    <label>{{ form.contact_name.label }}{{ form.contact_name() }}</label>
+    <label>{{ form.phone.label }}{{ form.phone(inputmode="tel") }}</label>
+    <label>{{ form.email.label }}{{ form.email() }}{% for e in form.email.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+    <label>{{ form.address.label }}{{ form.address() }}</label>
+    <label class="full-field">{{ form.website_url.label }}{{ form.website_url(placeholder="https://...") }}{% for e in form.website_url.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+    <label>{{ form.agreed_amount.label }}{{ form.agreed_amount(step="0.01", min="0") }}</label>
+    <label>{{ form.paid_amount.label }}{{ form.paid_amount(step="0.01", min="0") }}</label>
+    <label>{{ form.next_payment_date.label }}{{ form.next_payment_date() }}</label>
+    <label>{{ form.arrival_time.label }}{{ form.arrival_time() }}</label>
+    <label>{{ form.rating.label }}{{ form.rating(min="0", max="5") }}</label>
+    <label class="checkbox-box">{{ form.contract_signed() }} {{ form.contract_signed.label.text }}</label>
+    <label class="checkbox-box">{{ form.is_favorite() }} {{ form.is_favorite.label.text }}</label>
+    <label class="full-field">{{ form.notes.label }}{{ form.notes(rows=5, placeholder="מה כלול, תיאומים, דרישות מיוחדות...") }}</label>
+    <div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('vendors.index') }}">ביטול</a>{{ form.submit(class="primary-button inline") }}</div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">משימות</p><h1>{{ title }}</h1><p class="muted">הגדירו יעד, אחראי ועדיפות.</p></div></section>
+<section class="panel form-panel"><form method="post" class="form-grid">{{ form.hidden_tag() }}
+<label class="full-field">{{ form.title.label }}{{ form.title(placeholder="למשל: לסגור תפריט עם האולם") }}{% for e in form.title.errors %}<small class="field-error">{{ e }}</small>{% endfor %}</label>
+<label>{{ form.category.label }}{{ form.category() }}</label><label>{{ form.status.label }}{{ form.status() }}</label><label>{{ form.priority.label }}{{ form.priority() }}</label><label>{{ form.due_date.label }}{{ form.due_date() }}</label><label>{{ form.assigned_to.label }}{{ form.assigned_to(placeholder="יאיר / רבקה / אחר") }}</label><label>{{ form.related_vendor_id.label }}{{ form.related_vendor_id() }}</label>
+<label class="full-field">{{ form.notes.label }}{{ form.notes(rows=5, placeholder="פרטים חשובים, מה צריך להכין...") }}</label><div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('tasks.index') }}">ביטול</a>{{ form.submit(class="primary-button inline") }}</div></form></section>
+{% endblock %}

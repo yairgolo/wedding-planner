@@ -60,6 +60,8 @@ def create_app(config_name: str | None = None) -> Flask:
     from .invitations.routes import invitations_bp
     from .seating.routes import seating_bp
     from .shopping.routes import shopping_bp
+    from .tasks.routes import tasks_bp
+    from .vendors.routes import vendors_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -69,6 +71,8 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(seating_bp)
     app.register_blueprint(shopping_bp)
     app.register_blueprint(budget_bp)
+    app.register_blueprint(vendors_bp)
+    app.register_blueprint(tasks_bp)
     app.register_blueprint(errors_bp)
 
     from .models import (  # noqa: F401
@@ -81,7 +85,9 @@ def create_app(config_name: str | None = None) -> Flask:
         SeatingAssignment,
         SeatingTable,
         ShoppingItem,
+        Task,
         User,
+        Vendor,
         Wedding,
     )
 

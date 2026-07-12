@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}ספקים | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header vendor-page-header">
+  <div>
+    <p class="eyebrow">Sprint 6</p>
+    <h1>ניהול ספקים</h1>
+    <p class="muted">אנשי קשר, חוזים, תשלומים ושעת הגעה — הכול במקום אחד.</p>
+  </div>
+  <div class="header-actions">
+    <a class="secondary-button inline" href="{{ url_for('vendors.share_text') }}">📱 שיתוף רשימה</a>
+    <a class="secondary-button inline" href="{{ url_for('vendors.export_excel') }}">📊 ייצוא Excel</a>
+    <a class="primary-button inline" href="{{ url_for('vendors.create') }}">＋ ספק חדש</a>
+  </div>
+</section>
+
+<section class="guest-stats vendor-stats">
+  <article><small>סה״כ ספקים</small><strong>{{ stats.total }}</strong><span>ברשימה</span></article>
+  <article><small>נסגרו</small><strong>{{ stats.booked }}</strong><span>פעילים</span></article>
+  <article class="{% if stats.unsigned %}danger-stat{% endif %}"><small>חוזים חסרים</small><strong>{{ stats.unsigned }}</strong><span>דורשים טיפול</span></article>
+  <article class="{% if stats.overdue %}danger-stat{% endif %}"><small>יתרה לתשלום</small><strong>₪{{ '{:,.0f}'.format(stats.balance) }}</strong><span>{{ stats.overdue }} באיחור</span></article>
+</section>
+
+<section class="panel vendor-toolbar">
+  <form method="get" class="filter-bar vendor-filter-bar">
+    <input type="search" name="q" value="{{ q }}" placeholder="חיפוש ספק, איש קשר או טלפון">
+    <select name="category">
+      <option value="">כל הקטגוריות</option>
+      {% for key, label in category_labels.items() %}<option value="{{ key }}" {% if request.args.get('category') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <select name="status">
+      <option value="">כל הסטטוסים</option>
+      {% for key, label in status_labels.items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label class="compact-check"><input type="checkbox" name="favorites" value="1" {% if request.args.get('favorites') == '1' %}checked{% endif %}> מועדפים בלבד</label>
+    <button class="primary-button inline" type="submit">סינון</button>
+    <a class="text-button" href="{{ url_for('vendors.index') }}">נקה</a>
+  </form>
+</section>
+
+<section class="vendor-list">
+  {% for vendor in vendors %}
+  <article class="vendor-card {% if vendor.is_payment_overdue %}overdue{% endif %}">
+    <div class="vendor-main">
+      <div class="vendor-title-row">
+        <div>
+          <div class="shopping-badges">
+            <span class="status-badge {{ vendor.status }}">{{ status_labels.get(vendor.status, vendor.status) }}</span>
+            <span class="category-chip">{{ category_labels.get(vendor.category, vendor.category) }}</span>
+            {% if vendor.contract_signed %}<span class="success-chip">חוזה ✓</span>{% else %}<span class="warning-chip">ללא חוזה</span>{% endif %}
+            {% if vendor.is_payment_overdue %}<span class="danger-chip">תשלום באיחור</span>{% endif %}
+          </div>
+          <h3>{% if vendor.is_favorite %}⭐ {% endif %}{{ vendor.name }}</h3>
+          <p class="muted small-text">
+            {% if vendor.contact_name %}{{ vendor.contact_name }}{% endif %}
+            {% if vendor.phone %} · {{ vendor.phone }}{% endif %}
+            {% if vendor.arrival_time %} · הגעה {{ vendor.arrival_time.strftime('%H:%M') }}{% endif %}
+          </p>
+        </div>
+        <div class="vendor-balance">
+          <strong>₪{{ '{:,.0f}'.format(vendor.balance|float) }}</strong>
+          <small>יתרה</small>
+        </div>
+      </div>
+      <div class="vendor-finance-grid">
+        <div><small>סוכם</small><strong>₪{{ '{:,.0f}'.format((vendor.agreed_amount or 0)|float) }}</strong></div>
+        <div><small>שולם</small><strong>₪{{ '{:,.0f}'.format((vendor.paid_amount or 0)|float) }}</strong></div>
+        <div><small>תשלום הבא</small><strong>{% if vendor.next_payment_date %}{{ vendor.next_payment_date.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</strong></div>
+        <div><small>דירוג</small><strong>{% if vendor.rating %}{{ '★' * vendor.rating }}{% else %}—{% endif %}</strong></div>
+      </div>
+      {% if vendor.notes %}<p class="shopping-notes">{{ vendor.notes }}</p>{% endif %}
+    </div>
+    <div class="vendor-actions">
+      {% if vendor.phone %}<a href="tel:{{ vendor.phone }}" aria-label="התקשרות">📞</a><a href="https://wa.me/{{ vendor.phone|replace(' ','')|replace('-','')|replace('+','') }}" target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>{% endif %}
+      {% if vendor.address %}<a href="https://waze.com/ul?q={{ vendor.address|urlencode }}" target="_blank" rel="noopener" aria-label="Waze">📍</a>{% endif %}
+      {% if vendor.website_url %}<a href="{{ vendor.website_url }}" target="_blank" rel="noopener" aria-label="אתר">🔗</a>{% endif %}
+      <form method="post" action="{{ url_for('vendors.favorite', vendor_id=vendor.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="מועדף">{% if vendor.is_favorite %}★{% else %}☆{% endif %}</button></form>
+      {% if vendor.balance > 0 %}<form method="post" action="{{ url_for('vendors.mark_paid', vendor_id=vendor.id) }}" onsubmit="return confirm('לסמן את הספק כשולם במלואו?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="סמן כשולם">₪</button></form>{% endif %}
+      <a href="{{ url_for('vendors.edit', vendor_id=vendor.id) }}" aria-label="עריכה">✏️</a>
+      <form method="post" action="{{ url_for('vendors.delete', vendor_id=vendor.id) }}" onsubmit="return confirm('להעביר את הספק לסל המחזור?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" aria-label="מחיקה">🗑️</button></form>
+    </div>
+  </article>
+  {% else %}
+  <div class="panel empty-state"><span>🤝</span><h3>עדיין אין ספקים</h3><p>הוסיפו אולם, DJ, צלם וכל ספק נוסף.</p><a class="primary-button inline" href="{{ url_for('vendors.create') }}">הוספת ספק</a></div>
+  {% endfor %}
+</section>
+<a class="floating-add" href="{{ url_for('vendors.create') }}" aria-label="הוספת ספק">＋</a>
+{% endblock %}

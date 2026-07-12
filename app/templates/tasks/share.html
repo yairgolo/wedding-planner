@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}שיתוף משימות | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">משימות</p><h1>שיתוף משימות פתוחות</h1><p class="muted">רשימה נקייה שמתאימה ל־WhatsApp.</p></div></section>
+<section class="panel share-panel"><textarea id="shareText" rows="18" readonly>{{ text }}</textarea><div class="header-actions"><button class="secondary-button inline" type="button" onclick="navigator.clipboard.writeText(document.getElementById('shareText').value)">📋 העתקה</button><a class="primary-button inline" href="{{ whatsapp_url }}" target="_blank">💬 פתיחה ב־WhatsApp</a></div></section>
+{% endblock %}

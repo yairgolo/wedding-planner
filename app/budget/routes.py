@@ -226,25 +226,38 @@ def export_excel():
     ws = wb.active
     ws.title = "תקציב"
     ws.sheet_view.rightToLeft = True
-    ws.append([
-        "הוצאה", "קטגוריה", "ספק", "מתוכנן", "סכום בפועל", "מחויבות",
-        "שולם", "נותר", "סטטוס", "תשלום הבא", "הערות",
-    ])
+    ws.append(
+        [
+            "הוצאה",
+            "קטגוריה",
+            "ספק",
+            "מתוכנן",
+            "סכום בפועל",
+            "מחויבות",
+            "שולם",
+            "נותר",
+            "סטטוס",
+            "תשלום הבא",
+            "הערות",
+        ]
+    )
     style_header(ws)
     for item in items:
-        ws.append([
-            item.name,
-            CATEGORY_LABELS.get(item.category, item.category),
-            item.supplier_name or "",
-            float(item.planned_amount or 0),
-            float(item.actual_amount or 0),
-            float(item.committed_amount),
-            float(item.paid_amount or 0),
-            float(item.balance),
-            STATUS_LABELS.get(item.status, item.status),
-            item.due_date.isoformat() if item.due_date else "",
-            item.notes or "",
-        ])
+        ws.append(
+            [
+                item.name,
+                CATEGORY_LABELS.get(item.category, item.category),
+                item.supplier_name or "",
+                float(item.planned_amount or 0),
+                float(item.actual_amount or 0),
+                float(item.committed_amount),
+                float(item.paid_amount or 0),
+                float(item.balance),
+                STATUS_LABELS.get(item.status, item.status),
+                item.due_date.isoformat() if item.due_date else "",
+                item.notes or "",
+            ]
+        )
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     for i, width in enumerate([28, 18, 22, 14, 14, 14, 14, 14, 15, 16, 34], 1):
@@ -300,7 +313,9 @@ def share_text():
             due = f" · {item.due_date.strftime('%d/%m/%Y')}" if item.due_date else ""
             lines.append(f"• {item.name}: ₪{float(item.balance):,.0f}{due}")
     text = "\n".join(lines)
-    return render_template("budget/share.html", text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}")
+    return render_template(
+        "budget/share.html", text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}"
+    )
 
 
 def apply_form(item: BudgetItem, form: BudgetItemForm) -> None:

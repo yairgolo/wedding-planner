@@ -100,9 +100,7 @@ def index():
         "purchased": sum(1 for item in all_items if item.is_purchased),
         "remaining": sum(1 for item in all_items if item.status not in {"purchased", "cancelled"}),
         "estimated": sum(
-            float(item.total_estimated)
-            for item in all_items
-            if item.status != "cancelled"
+            float(item.total_estimated) for item in all_items if item.status != "cancelled"
         ),
         "actual": sum(float(item.total_actual) for item in all_items if item.status == "purchased"),
     }
@@ -205,29 +203,42 @@ def export_excel():
     ws.title = "קניות"
     ws.sheet_view.rightToLeft = True
     headers = [
-        "פריט", "קטגוריה", "סטטוס", "עדיפות", "כמות", "מחיר משוער ליחידה",
-        "מחיר בפועל ליחידה", "סה״כ משוער", "סה״כ בפועל", "חנות", "תאריך יעד",
-        "Wishlist", "קישור", "הערות",
+        "פריט",
+        "קטגוריה",
+        "סטטוס",
+        "עדיפות",
+        "כמות",
+        "מחיר משוער ליחידה",
+        "מחיר בפועל ליחידה",
+        "סה״כ משוער",
+        "סה״כ בפועל",
+        "חנות",
+        "תאריך יעד",
+        "Wishlist",
+        "קישור",
+        "הערות",
     ]
     ws.append(headers)
     style_header(ws)
     for item in items:
-        ws.append([
-            item.name,
-            CATEGORY_LABELS.get(item.category, item.category),
-            STATUS_LABELS.get(item.status, item.status),
-            PRIORITY_LABELS.get(item.priority, item.priority),
-            item.quantity,
-            float(item.estimated_price or 0),
-            float(item.actual_price or 0),
-            float(item.total_estimated),
-            float(item.total_actual),
-            item.store_name or "",
-            item.due_date.isoformat() if item.due_date else "",
-            "כן" if item.is_wishlist else "לא",
-            item.product_url or "",
-            item.notes or "",
-        ])
+        ws.append(
+            [
+                item.name,
+                CATEGORY_LABELS.get(item.category, item.category),
+                STATUS_LABELS.get(item.status, item.status),
+                PRIORITY_LABELS.get(item.priority, item.priority),
+                item.quantity,
+                float(item.estimated_price or 0),
+                float(item.actual_price or 0),
+                float(item.total_estimated),
+                float(item.total_actual),
+                item.store_name or "",
+                item.due_date.isoformat() if item.due_date else "",
+                "כן" if item.is_wishlist else "לא",
+                item.product_url or "",
+                item.notes or "",
+            ]
+        )
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     widths = [28, 14, 14, 12, 9, 18, 18, 16, 16, 20, 14, 12, 36, 32]
@@ -281,7 +292,9 @@ def share_text():
     if not items:
         lines.append("אין פריטים פתוחים 🎉")
     text = "\n".join(lines)
-    return render_template("shopping/share.html", text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}")
+    return render_template(
+        "shopping/share.html", text=text, whatsapp_url=f"https://wa.me/?text={quote(text)}"
+    )
 
 
 def apply_form(item: ShoppingItem, form: ShoppingItemForm) -> None:

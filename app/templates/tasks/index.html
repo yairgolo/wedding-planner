@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}משימות | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header task-page-header">
+  <div><p class="eyebrow">Sprint 6</p><h1>ניהול משימות</h1><p class="muted">לוח עבודה מסודר עם עדיפויות, אחריות ותאריכי יעד.</p></div>
+  <div class="header-actions"><a class="secondary-button inline" href="{{ url_for('tasks.share_text') }}">📱 שיתוף משימות</a><a class="secondary-button inline" href="{{ url_for('tasks.export_excel') }}">📊 ייצוא Excel</a><a class="primary-button inline" href="{{ url_for('tasks.create') }}">＋ משימה חדשה</a></div>
+</section>
+
+<section class="guest-stats task-stats">
+  <article><small>סה״כ משימות</small><strong>{{ stats.total }}</strong><span>ברשימה</span></article>
+  <article><small>לביצוע</small><strong>{{ stats.todo }}</strong><span>טרם התחילו</span></article>
+  <article><small>בתהליך</small><strong>{{ stats.doing }}</strong><span>עובדים עליהן</span></article>
+  <article class="{% if stats.overdue %}danger-stat{% endif %}"><small>באיחור</small><strong>{{ stats.overdue }}</strong><span>{{ stats.due_soon }} בשבוע הקרוב</span></article>
+</section>
+
+<section class="panel task-toolbar">
+  <form method="get" class="filter-bar task-filter-bar">
+    <input type="search" name="q" value="{{ q }}" placeholder="חיפוש משימה, אחראי או הערה">
+    <select name="category"><option value="">כל הקטגוריות</option>{% for key,label in category_labels.items() %}<option value="{{ key }}" {% if request.args.get('category') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="status"><option value="">כל הסטטוסים</option>{% for key,label in status_labels.items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="priority"><option value="">כל העדיפויות</option>{% for key,label in priority_labels.items() %}<option value="{{ key }}" {% if request.args.get('priority') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="assignee"><option value="">כל האחראים</option>{% for name in assignees %}<option value="{{ name }}" {% if request.args.get('assignee') == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+    <button class="primary-button inline" type="submit">סינון</button><a class="text-button" href="{{ url_for('tasks.index') }}">נקה</a>
+  </form>
+</section>
+
+<section class="kanban-board">
+  {% for status_key in ['todo','doing','done'] %}
+  <section class="kanban-column {{ status_key }}">
+    <div class="kanban-heading"><h2>{{ status_labels[status_key] }}</h2><span>{{ columns[status_key]|length }}</span></div>
+    <div class="kanban-items">
+      {% for task in columns[status_key] %}
+      <article class="task-card priority-{{ task.priority }} {% if task.is_overdue %}overdue{% endif %}">
+        <div class="task-card-top"><span class="category-chip">{{ category_labels.get(task.category, task.category) }}</span><span class="priority-chip {{ task.priority }}">{{ priority_labels.get(task.priority, task.priority) }}</span></div>
+        <h3>{{ task.title }}</h3>
+        <div class="task-meta">
+          {% if task.due_date %}<span>📅 {{ task.due_date.strftime('%d/%m/%Y') }}</span>{% endif %}
+          {% if task.assigned_to %}<span>👤 {{ task.assigned_to }}</span>{% endif %}
+          {% if task.related_vendor %}<span>🤝 {{ task.related_vendor.name }}</span>{% endif %}
+          {% if task.is_overdue %}<span class="danger-text">⚠ באיחור</span>{% endif %}
+        </div>
+        {% if task.notes %}<p class="task-notes">{{ task.notes }}</p>{% endif %}
+        <div class="task-actions">
+          {% if task.status != 'todo' %}<form method="post" action="{{ url_for('tasks.change_status', task_id=task.id, status='todo') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">← לביצוע</button></form>{% endif %}
+          {% if task.status != 'doing' %}<form method="post" action="{{ url_for('tasks.change_status', task_id=task.id, status='doing') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">בתהליך</button></form>{% endif %}
+          {% if task.status != 'done' %}<form method="post" action="{{ url_for('tasks.change_status', task_id=task.id, status='done') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="complete-task" type="submit">✓ הושלם</button></form>{% endif %}
+          <a href="{{ url_for('tasks.edit', task_id=task.id) }}">✏️</a>
+          <form method="post" action="{{ url_for('tasks.delete', task_id=task.id) }}" onsubmit="return confirm('להעביר את המשימה לסל המחזור?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">🗑️</button></form>
+        </div>
+      </article>
+      {% else %}<div class="kanban-empty">אין משימות בעמודה זו</div>{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</section>
+<a class="floating-add" href="{{ url_for('tasks.create') }}" aria-label="הוספת משימה">＋</a>
+{% endblock %}

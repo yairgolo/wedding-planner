@@ -353,17 +353,19 @@ def export_excel():
     for table in tables:
         for assignment in sorted(table.assignments, key=lambda item: item.guest.full_name):
             guest = assignment.guest
-            ws.append([
-                table.number,
-                table.name or "",
-                table.zone or "",
-                guest.full_name,
-                guest.phone or "",
-                assignment.seat_count,
-                side_labels.get(guest.side, guest.side),
-                guest.diet_notes or guest.diet,
-                guest.notes or "",
-            ])
+            ws.append(
+                [
+                    table.number,
+                    table.name or "",
+                    table.zone or "",
+                    guest.full_name,
+                    guest.phone or "",
+                    assignment.seat_count,
+                    side_labels.get(guest.side, guest.side),
+                    guest.diet_notes or guest.diet,
+                    guest.notes or "",
+                ]
+            )
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     for idx, width in enumerate([12, 20, 16, 28, 17, 10, 12, 22, 34], start=1):
@@ -376,13 +378,15 @@ def export_excel():
         cell.fill = header_fill
         cell.font = Font(color="FFFFFF", bold=True)
     for guest in unseated:
-        pending.append([
-            guest.full_name,
-            guest.phone or "",
-            expected_seats(guest),
-            guest.rsvp_status,
-            guest.group_name or "",
-        ])
+        pending.append(
+            [
+                guest.full_name,
+                guest.phone or "",
+                expected_seats(guest),
+                guest.rsvp_status,
+                guest.group_name or "",
+            ]
+        )
     summary = wb.create_sheet("סיכום")
     summary.sheet_view.rightToLeft = True
     summary.append(["מדד", "כמות"])

@@ -5,7 +5,9 @@ from .guest import Guest
 from .invitation import InvitationActivity, InvitationSettings
 from .seating import SeatingAssignment, SeatingTable
 from .shopping import ShoppingItem
+from .task import Task
 from .user import User
+from .vendor import Vendor
 from .wedding import Wedding
 
 __all__ = [
@@ -18,6 +20,8 @@ __all__ = [
     "SeatingAssignment",
     "SeatingTable",
     "ShoppingItem",
+    "Task",
+    "Vendor",
     "User",
     "Wedding",
 ]

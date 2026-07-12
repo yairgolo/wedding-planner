@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}שיתוף ספקים | Wedding Planner{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">ספקים</p><h1>שיתוף רשימת ספקים</h1><p class="muted">העתיקו או פתחו ישירות ב־WhatsApp.</p></div></section>
+<section class="panel share-panel"><textarea id="shareText" rows="18" readonly>{{ text }}</textarea><div class="header-actions"><button class="secondary-button inline" type="button" onclick="navigator.clipboard.writeText(document.getElementById('shareText').value)">📋 העתקה</button><a class="primary-button inline" href="{{ whatsapp_url }}" target="_blank">💬 פתיחה ב־WhatsApp</a></div></section>
+{% endblock %}

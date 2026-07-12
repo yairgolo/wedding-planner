@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — Sprint 6 Vendors & Tasks
+
+- Added complete vendor management with contacts, contracts, payments and arrival times.
+- Added vendor Excel and WhatsApp exports.
+- Added task management with Kanban view, priorities, assignees and vendor links.
+- Added task Excel and WhatsApp exports.
+- Added vendor and task dashboard metrics.
+- Added audit logs and mobile-first layouts.
+
+
 ## 0.5.0 — Sprint 5: Shopping & Budget
 
 - Added full shopping management for wedding, home, clothing, gifts and general purchases.
