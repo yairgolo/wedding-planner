@@ -14,6 +14,7 @@ from app.extensions import db
 from app.models import AuditLog, Vendor, Wedding
 
 from .forms import VendorForm
+from app.services.vendor_budget import sync_vendor_to_budget
 
 vendors_bp = Blueprint("vendors", __name__, url_prefix="/vendors")
 
@@ -127,6 +128,7 @@ def create():
         apply_form(vendor, form)
         db.session.add(vendor)
         db.session.flush()
+        sync_vendor_to_budget(vendor)
         audit(wedding.id, vendor, "create", f"נוסף הספק {vendor.name}")
         db.session.commit()
         flash("הספק נוסף.", "success")
@@ -144,6 +146,7 @@ def edit(vendor_id: int):
     form = VendorForm(obj=vendor)
     if form.validate_on_submit():
         apply_form(vendor, form)
+        sync_vendor_to_budget(vendor)
         audit(wedding.id, vendor, "update", f"עודכן הספק {vendor.name}")
         db.session.commit()
         flash("הספק עודכן.", "success")
@@ -175,6 +178,7 @@ def mark_paid(vendor_id: int):
     if vendor.wedding_id != wedding.id or vendor.is_deleted:
         abort(404)
     vendor.paid_amount = vendor.agreed_amount or 0
+    sync_vendor_to_budget(vendor)
     audit(wedding.id, vendor, "paid", f"הספק {vendor.name} סומן כשולם במלואו")
     db.session.commit()
     flash("הספק סומן כשולם.", "success")
@@ -189,6 +193,7 @@ def delete(vendor_id: int):
     if vendor.wedding_id != wedding.id:
         abort(404)
     vendor.soft_delete()
+    sync_vendor_to_budget(vendor)
     audit(wedding.id, vendor, "delete", f"הספק {vendor.name} הועבר לסל המחזור")
     db.session.commit()
     flash("הספק הועבר לסל המחזור.", "success")

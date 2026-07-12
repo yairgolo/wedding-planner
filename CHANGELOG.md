@@ -37,3 +37,18 @@
 ## 0.1.0 — Sprint 1: Foundation
 
 - Added the modular Flask foundation, authentication, Docker and responsive RTL UI.
+
+## 0.7.0 — Sprint 7
+
+- Added gifts management, thank-you tracking and Excel/WhatsApp exports.
+- Added secure document center for contracts, receipts, quotes and images.
+- Added Activity Center based on the shared audit log.
+- Added a recycle bin with restore support for core modules.
+- Fixed invisible text on save/submit buttons, including iOS Safari.
+
+## 0.7.1 — Vendor/Budget Sync Hotfix
+
+- Fixed invisible labels on primary submit buttons caused by a more specific form input background rule.
+- Signed vendor contracts now create and synchronize a linked budget expense automatically.
+- Vendor payment, amount, due date, category, cancellation and deletion stay synchronized with budget.
+- Linked budget expenses are edited from the vendor card to avoid conflicting values.

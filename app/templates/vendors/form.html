@@ -18,7 +18,7 @@
     <label>{{ form.next_payment_date.label }}{{ form.next_payment_date() }}</label>
     <label>{{ form.arrival_time.label }}{{ form.arrival_time() }}</label>
     <label>{{ form.rating.label }}{{ form.rating(min="0", max="5") }}</label>
-    <label class="checkbox-box">{{ form.contract_signed() }} {{ form.contract_signed.label.text }}</label>
+    <label class="checkbox-box">{{ form.contract_signed() }} {{ form.contract_signed.label.text }}</label><small class="field-help">כאשר החוזה מסומן ונקבע סכום, ההוצאה תיווצר ותתעדכן אוטומטית בתקציב.</small>
     <label class="checkbox-box">{{ form.is_favorite() }} {{ form.is_favorite.label.text }}</label>
     <label class="full-field">{{ form.notes.label }}{{ form.notes(rows=5, placeholder="מה כלול, תיאומים, דרישות מיוחדות...") }}</label>
     <div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('vendors.index') }}">ביטול</a>{{ form.submit(class="primary-button inline") }}</div>

@@ -39,6 +39,12 @@ class Vendor(db.Model):
     )
 
     wedding = db.relationship("Wedding", back_populates="vendors")
+    budget_item = db.relationship(
+        "BudgetItem",
+        back_populates="vendor",
+        uselist=False,
+        foreign_keys="BudgetItem.vendor_id",
+    )
 
     @property
     def balance(self) -> Decimal:

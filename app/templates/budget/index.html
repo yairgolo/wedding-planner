@@ -43,7 +43,7 @@
   {% for item in items %}
   <article class="budget-card {% if item.status == 'paid' %}paid{% endif %} {% if item.is_overdue %}overdue{% endif %}">
     <div class="budget-card-main">
-      <div class="shopping-badges"><span class="status-badge {{ item.status }}">{{ status_labels.get(item.status,item.status) }}</span><span class="category-chip">{{ category_labels.get(item.category,item.category) }}</span>{% if item.is_overdue %}<span class="danger-chip">באיחור</span>{% endif %}</div>
+      <div class="shopping-badges"><span class="status-badge {{ item.status }}">{{ status_labels.get(item.status,item.status) }}</span><span class="category-chip">{{ category_labels.get(item.category,item.category) }}</span>{% if item.is_overdue %}<span class="danger-chip">באיחור</span>{% endif %}{% if item.vendor_id %}<span class="success-chip">מסונכרן מספק</span>{% endif %}</div>
       <h3>{{ item.name }}</h3>
       <p class="muted small-text">{% if item.supplier_name %}{{ item.supplier_name }}{% endif %}{% if item.due_date %} · תשלום הבא {{ item.due_date.strftime('%d/%m/%Y') }}{% endif %}</p>
       {% if item.notes %}<p class="shopping-notes">{{ item.notes }}</p>{% endif %}

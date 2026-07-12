@@ -52,10 +52,13 @@ def create_app(config_name: str | None = None) -> Flask:
             force_https=True,
         )
 
+    from .activity.routes import activity_bp, trash_bp
     from .auth.routes import auth_bp
     from .budget.routes import budget_bp
     from .core.errors import errors_bp
     from .dashboard.routes import dashboard_bp
+    from .documents.routes import documents_bp
+    from .gifts.routes import gifts_bp
     from .guests.routes import guests_bp, rsvp_bp
     from .invitations.routes import invitations_bp
     from .seating.routes import seating_bp
@@ -73,12 +76,18 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(budget_bp)
     app.register_blueprint(vendors_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(gifts_bp)
+    app.register_blueprint(documents_bp)
+    app.register_blueprint(activity_bp)
+    app.register_blueprint(trash_bp)
     app.register_blueprint(errors_bp)
 
     from .models import (  # noqa: F401
         AuditLog,
         BudgetItem,
+        Document,
         Family,
+        Gift,
         Guest,
         InvitationActivity,
         InvitationSettings,
@@ -107,6 +116,7 @@ def configure_logging(app: Flask) -> None:
 
 def register_commands(app: Flask) -> None:
     import click
+    from sqlalchemy import inspect, text
     from werkzeug.security import generate_password_hash
 
     from .models import User, Wedding
@@ -115,6 +125,17 @@ def register_commands(app: Flask) -> None:
     def init_db() -> None:
         """Create tables and seed the first administrator and wedding."""
         db.create_all()
+        inspector = inspect(db.engine)
+        if "budget_items" in inspector.get_table_names():
+            columns = {column["name"] for column in inspector.get_columns("budget_items")}
+            if "vendor_id" not in columns:
+                with db.engine.begin() as connection:
+                    connection.execute(
+                        text("ALTER TABLE budget_items ADD COLUMN vendor_id INTEGER REFERENCES vendors(id)")
+                    )
+                    connection.execute(
+                        text("CREATE INDEX IF NOT EXISTS ix_budget_items_vendor_id ON budget_items (vendor_id)")
+                    )
         email = os.getenv("ADMIN_EMAIL", "admin@example.com").strip().lower()
         password = os.getenv("ADMIN_PASSWORD", "change-me-now")
         user = db.session.scalar(db.select(User).where(User.email == email))

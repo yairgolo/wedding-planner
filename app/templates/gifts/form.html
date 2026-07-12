@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}{{ title }} | Wedding Planner{% endblock %}{% block content %}
+<section class="page-header"><div><p class="eyebrow">מתנות</p><h1>{{ title }}</h1></div></section>
+<section class="panel form-panel"><form method="post" class="form-grid">{{ form.hidden_tag() }}
+<label class="full-field">{{ form.guest_name.label }}{{ form.guest_name() }}</label><label>{{ form.gift_type.label }}{{ form.gift_type() }}</label><label>{{ form.amount.label }}{{ form.amount(step='0.01',min='0') }}</label><label class="full-field">{{ form.description.label }}{{ form.description() }}</label><label>{{ form.received_date.label }}{{ form.received_date() }}</label><label class="checkbox-box">{{ form.thank_you_sent() }} {{ form.thank_you_sent.label.text }}</label><label class="full-field">{{ form.notes.label }}{{ form.notes(rows=5) }}</label><div class="form-actions full-field"><a class="secondary-button inline" href="{{ url_for('gifts.index') }}">ביטול</a>{{ form.submit(class='primary-button inline') }}</div></form></section>
+{% endblock %}

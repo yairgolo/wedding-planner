@@ -91,3 +91,12 @@ ruff check .
 - Sprint 8: מרכז ייצוא מלא
 - Sprint 9: PWA והרשאות מרובות משתמשים
 - Sprint 10: Production hardening ו־Deploy
+
+## Sprint 7 — Gifts, Documents and Activity
+
+New routes:
+
+- `/gifts` — gifts and thank-you tracking
+- `/documents` — secure document uploads and downloads
+- `/activity` — recent system activity
+- `/trash` — restore softly deleted records

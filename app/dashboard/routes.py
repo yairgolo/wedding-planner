@@ -4,7 +4,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required
 
 from app.extensions import db
-from app.models import BudgetItem, Guest, ShoppingItem, Task, Vendor, Wedding
+from app.models import BudgetItem, Document, Gift, Guest, ShoppingItem, Task, Vendor, Wedding
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -18,6 +18,8 @@ def index():
     budget = []
     tasks = []
     vendors = []
+    gifts = []
+    documents = []
     if wedding:
         guests = db.session.scalars(
             db.select(Guest).where(Guest.wedding_id == wedding.id, Guest.deleted_at.is_(None))
@@ -34,6 +36,14 @@ def index():
         ).all()
         tasks = db.session.scalars(
             db.select(Task).where(Task.wedding_id == wedding.id, Task.deleted_at.is_(None))
+        ).all()
+        gifts = db.session.scalars(
+            db.select(Gift).where(Gift.wedding_id == wedding.id, Gift.deleted_at.is_(None))
+        ).all()
+        documents = db.session.scalars(
+            db.select(Document).where(
+                Document.wedding_id == wedding.id, Document.deleted_at.is_(None)
+            )
         ).all()
         vendors = db.session.scalars(
             db.select(Vendor).where(Vendor.wedding_id == wedding.id, Vendor.deleted_at.is_(None))
@@ -66,6 +76,10 @@ def index():
         "vendor_balance": sum(
             (vendor.balance for vendor in vendors if vendor.status != "cancelled"), Decimal("0")
         ),
+        "gifts": len(gifts),
+        "gift_total": sum((gift.value for gift in gifts), Decimal("0")),
+        "thank_you_pending": sum(1 for gift in gifts if not gift.thank_you_sent),
+        "documents": len(documents),
         "unsigned_contracts": sum(
             1
             for vendor in vendors

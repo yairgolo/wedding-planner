@@ -11,6 +11,7 @@ class BudgetItem(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     wedding_id = db.Column(db.Integer, db.ForeignKey("weddings.id"), nullable=False, index=True)
+    vendor_id = db.Column(db.Integer, db.ForeignKey("vendors.id"), nullable=True, index=True)
     name = db.Column(db.String(180), nullable=False, index=True)
     category = db.Column(db.String(40), nullable=False, default="other", index=True)
     supplier_name = db.Column(db.String(180), nullable=True)
@@ -32,6 +33,7 @@ class BudgetItem(db.Model):
     )
 
     wedding = db.relationship("Wedding", back_populates="budget_items")
+    vendor = db.relationship("Vendor", back_populates="budget_item", foreign_keys=[vendor_id])
 
     @property
     def is_deleted(self) -> bool:

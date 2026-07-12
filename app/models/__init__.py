@@ -1,6 +1,8 @@
 from .audit_log import AuditLog
 from .budget import BudgetItem
+from .document import Document
 from .family import Family
+from .gift import Gift
 from .guest import Guest
 from .invitation import InvitationActivity, InvitationSettings
 from .seating import SeatingAssignment, SeatingTable
@@ -15,6 +17,8 @@ __all__ = [
     "BudgetItem",
     "Family",
     "Guest",
+    "Gift",
+    "Document",
     "InvitationActivity",
     "InvitationSettings",
     "SeatingAssignment",

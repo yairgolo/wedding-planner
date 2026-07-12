@@ -32,6 +32,9 @@
         <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
         <a class="nav-link {% if request.blueprint == 'vendors' %}active{% endif %}" href="{{ url_for('vendors.index') }}"><span>🤝</span>ספקים</a>
         <a class="nav-link {% if request.blueprint == 'tasks' %}active{% endif %}" href="{{ url_for('tasks.index') }}"><span>📋</span>משימות</a>
+        <a class="nav-link {% if request.blueprint == 'gifts' %}active{% endif %}" href="{{ url_for('gifts.index') }}"><span>🎁</span>מתנות</a>
+        <a class="nav-link {% if request.blueprint == 'documents' %}active{% endif %}" href="{{ url_for('documents.index') }}"><span>📂</span>מסמכים</a>
+        <a class="nav-link {% if request.blueprint in ['activity','trash'] %}active{% endif %}" href="{{ url_for('activity.index') }}"><span>🕒</span>פעילות</a>
       </nav>
       <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

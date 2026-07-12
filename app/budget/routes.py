@@ -12,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import AuditLog, BudgetItem, ShoppingItem, Wedding
+from app.models import AuditLog, BudgetItem, ShoppingItem, Vendor, Wedding
 
 from .forms import BudgetItemForm, BudgetTargetForm
 
@@ -173,6 +173,9 @@ def edit(item_id: int):
     item = db.get_or_404(BudgetItem, item_id)
     if item.wedding_id != wedding.id or item.is_deleted:
         abort(404)
+    if item.vendor_id:
+        flash("הוצאה זו מסונכרנת מספק. יש לערוך אותה דרך כרטיס הספק.", "warning")
+        return redirect(url_for("vendors.edit", vendor_id=item.vendor_id))
     form = BudgetItemForm(obj=item)
     if form.validate_on_submit():
         apply_form(item, form)
@@ -193,6 +196,10 @@ def mark_paid(item_id: int):
         abort(404)
     item.paid_amount = item.committed_amount
     item.status = "paid"
+    if item.vendor_id:
+        vendor = db.session.get(Vendor, item.vendor_id)
+        if vendor and vendor.wedding_id == wedding.id:
+            vendor.paid_amount = vendor.agreed_amount or 0
     audit(wedding.id, item, "paid", f"ההוצאה {item.name} סומנה כשולמה")
     db.session.commit()
     flash("התשלום סומן כמלא.", "success")
@@ -206,6 +213,9 @@ def delete(item_id: int):
     item = db.get_or_404(BudgetItem, item_id)
     if item.wedding_id != wedding.id:
         abort(404)
+    if item.vendor_id:
+        flash("הוצאה מסונכרנת לא נמחקת בנפרד. יש לבטל חוזה או למחוק את הספק.", "warning")
+        return redirect(url_for("budget.index"))
     item.soft_delete()
     audit(wedding.id, item, "delete", f"ההוצאה {item.name} הועברה לסל המחזור")
     db.session.commit()
