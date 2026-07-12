@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.2 — Mobile navigation polish
+
+- Removed the crowded mobile bottom navigation.
+- Added a centered, independent floating Quick Add button.
+- Fixed mobile sidebar scrolling on iPhone and Android.
+- Added safe-area support for notched iPhones.
+- Improved quick-add sheet scrolling on small screens.
+- Prevented the page behind the drawer from scrolling.
+
 ## 0.6.0 — Sprint 6 Vendors & Tasks
 
 - Added complete vendor management with contacts, contracts, payments and arrival times.
@@ -63,3 +72,13 @@
 - Added a central export center and CSV export endpoints.
 - Added new Wedding profile fields and safe SQLite upgrade logic.
 - Unified form controls and submit-button styling across desktop and mobile.
+
+## 0.8.1 — Dashboard & Profile Polish
+
+- Added a persistent desktop command bar with global search, notifications and quick add.
+- Added a reusable quick-add sheet for desktop and mobile.
+- Rebuilt the dashboard cards with richer context and clickable navigation.
+- Added detailed Wedding Health checks and per-module completion progress.
+- Added recent activity directly to the dashboard.
+- Added paid, committed and remaining budget figures.
+- Improved empty states, mobile spacing, hover feedback and dashboard responsiveness.

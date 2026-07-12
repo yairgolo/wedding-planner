@@ -49,6 +49,17 @@
     </aside>
 
     <main class="main-content">
+      <header class="desktop-command-bar">
+        <form action="{{ url_for('search.index') }}" method="get" class="command-search">
+          <span>⌕</span><input name="q" type="search" placeholder="חיפוש מוזמן, ספק, משימה או מסמך..." aria-label="חיפוש בכל המערכת">
+          <kbd>Ctrl K</kbd>
+        </form>
+        <div class="command-actions">
+          <a class="command-icon" href="{{ url_for('notifications.index') }}" aria-label="התראות">🔔</a>
+          <button class="command-icon command-add" type="button" data-quick-add-open aria-label="הוספה מהירה">＋</button>
+          <a class="command-profile" href="{{ url_for('settings.wedding_profile') }}"><span class="avatar">{{ current_user.display_name[:1] }}</span><strong>{{ current_user.display_name }}</strong></a>
+        </div>
+      </header>
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           <div class="toast-stack">
@@ -59,14 +70,21 @@
       {% block content %}{% endblock %}
     </main>
 
-    <nav class="bottom-nav" aria-label="ניווט תחתון">
-      <a class="active" href="{{ url_for('dashboard.index') }}"><span>🏠</span><small>בית</small></a>
-      <a class="{% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span><small>מוזמנים</small></a>
-      <a href="{{ url_for('guests.create') }}" class="quick-add" aria-label="הוספת מוזמן">＋</a>
-      <a class="{% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span><small>הזמנות</small></a>
-      <a class="{% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span><small>הושבה</small></a>
-      <a class="{% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span><small>קניות</small></a>
-    </nav>
+    <button type="button" class="mobile-fab" aria-label="הוספה מהירה" title="הוספה מהירה" data-quick-add-open>
+      <span aria-hidden="true">＋</span>
+    </button>
+    <div class="quick-add-backdrop" data-quick-add-backdrop hidden></div>
+    <section class="quick-add-sheet" data-quick-add-sheet aria-hidden="true" aria-label="הוספה מהירה">
+      <div class="quick-add-sheet-head"><div><p class="eyebrow">פעולה חדשה</p><h2>מה תרצו להוסיף?</h2></div><button type="button" class="sheet-close" data-quick-add-close aria-label="סגירה">×</button></div>
+      <div class="quick-add-options">
+        <a href="{{ url_for('guests.create') }}"><span>👤</span><strong>מוזמן חדש</strong><small>הוספה לרשימת המוזמנים</small></a>
+        <a href="{{ url_for('vendors.create') }}"><span>🤝</span><strong>ספק חדש</strong><small>חוזה, תשלום ופרטים</small></a>
+        <a href="{{ url_for('tasks.create') }}"><span>📋</span><strong>משימה חדשה</strong><small>משימה ותאריך יעד</small></a>
+        <a href="{{ url_for('shopping.create') }}"><span>🛒</span><strong>קנייה חדשה</strong><small>לחתונה או לבית</small></a>
+        <a href="{{ url_for('budget.create') }}"><span>💰</span><strong>הוצאה חדשה</strong><small>התחייבות או תשלום</small></a>
+        <a href="{{ url_for('gifts.create') }}"><span>🎁</span><strong>מתנה חדשה</strong><small>מעקב מתנות ותודות</small></a>
+      </div>
+    </section>
   </div>
   {% else %}
     {% block public_content %}{% endblock %}
