@@ -17,7 +17,6 @@ from flask import (
 )
 from flask_login import current_user, login_required
 from sqlalchemy import or_
-from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import AuditLog, Document, Vendor, Wedding
@@ -47,6 +46,24 @@ def folder():
     path = Path(current_app.config["UPLOAD_FOLDER"]) / "documents"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def safe_original_filename(filename: str) -> tuple[str, str]:
+    """Keep Unicode display names while stripping any submitted path."""
+    name = (filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    name = "".join(char for char in name if char >= " " and char != "\x7f")
+    ext = Path(name).suffix.lower().lstrip(".")
+    if len(name) > 255:
+        stem_limit = max(1, 254 - len(ext))
+        name = f"{Path(name).stem[:stem_limit]}.{ext}" if ext else name[:255]
+    return name, ext
+
+
+def looks_like_pdf(upload) -> bool:
+    upload.stream.seek(0)
+    signature = upload.stream.read(5)
+    upload.stream.seek(0)
+    return signature == b"%PDF-"
 
 
 def audit(wedding_id, document, action, text):
@@ -120,10 +137,14 @@ def create():
     ]
     if form.validate_on_submit():
         upload = form.file.data
-        original = secure_filename(upload.filename or "")
-        ext = Path(original).suffix.lower().lstrip(".")
+        original, ext = safe_original_filename(upload.filename or "")
         if ext not in ALLOWED:
-            flash("סוג הקובץ אינו מורשה.", "danger")
+            form.file.errors.append(
+                "סוג הקובץ אינו מורשה. אפשר להעלות PDF, תמונה, Word, Excel או קובץ טקסט."
+            )
+            return render_template("documents/form.html", form=form, title="העלאת מסמך")
+        if ext == "pdf" and not looks_like_pdf(upload):
+            form.file.errors.append("הקובץ שנבחר אינו PDF תקין או שהוא פגום.")
             return render_template("documents/form.html", form=form, title="העלאת מסמך")
         stored = f"{secrets.token_hex(16)}.{ext}"
         target = folder() / stored
