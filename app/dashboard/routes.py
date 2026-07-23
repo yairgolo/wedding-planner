@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from flask import Blueprint, render_template
@@ -139,7 +140,13 @@ def index():
         "thank_you_pending": sum(1 for gift in gifts if not gift.thank_you_sent),
         "documents": len(documents),
         "unsigned_contracts": unsigned_contracts,
+        "rsvp_percent": percent(confirmed + declined, invited),
+        "task_completion_percent": percent(completed_tasks, len(tasks)),
+        "budget_target": wedding.budget_target if wedding else Decimal("0"),
     }
+    metrics["budget_usage_percent"] = percent(
+        budget_committed, metrics["budget_target"]
+    )
 
     readiness_details = [
         ("תאריך חתונה", bool(wedding and wedding.event_date), "settings.wedding_profile"),
@@ -198,6 +205,26 @@ def index():
         key=lambda task: (task.due_date is None, task.due_date, task.priority != "urgent"),
     )[:5]
 
+    days_until = wedding.days_until if wedding else None
+    if days_until is None:
+        planning_phase = "מתחילים לתכנן"
+        planning_hint = "הגדירו תאריך כדי לקבל תכנית עבודה מדויקת"
+    elif days_until < 0:
+        planning_phase = "אחרי החתונה"
+        planning_hint = "זה הזמן להשלים תודות, מתנות וסגירת תשלומים"
+    elif days_until <= 7:
+        planning_phase = "שבוע החתונה"
+        planning_hint = "עוברים למצב תפעול ומוודאים שכל הפרטים סגורים"
+    elif days_until <= 30:
+        planning_phase = "הישורת האחרונה"
+        planning_hint = "מתמקדים באישורי הגעה, הושבה ותשלומים"
+    elif days_until <= 90:
+        planning_phase = "סוגרים פרטים"
+        planning_hint = "זה הזמן לקדם ספקים, הזמנות ומשימות מפתח"
+    else:
+        planning_phase = "בונים את התכנית"
+        planning_hint = "מתקדמים בנחת לפי סדר העדיפויות"
+
     return render_template(
         "dashboard/index.html",
         wedding=wedding,
@@ -209,6 +236,9 @@ def index():
         attention_items=attention_items[:5],
         recent_activity=recent_activity,
         upcoming_milestones=upcoming_milestones,
+        today=date.today(),
+        planning_phase=planning_phase,
+        planning_hint=planning_hint,
     )
 
 

@@ -37,23 +37,42 @@
   const closeSheetButton = document.querySelector('[data-quick-add-close]');
 
   if (sheet && sheetBackdrop && quickAddButtons.length) {
+    let previousFocus;
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
     const openSheet = () => {
+      previousFocus = document.activeElement;
       sheet.classList.add('open');
       sheet.setAttribute('aria-hidden', 'false');
       sheetBackdrop.hidden = false;
       document.documentElement.classList.add('sheet-open');
+      window.requestAnimationFrame(() => sheet.querySelector(focusableSelector)?.focus());
     };
     const closeSheet = () => {
       sheet.classList.remove('open');
       sheet.setAttribute('aria-hidden', 'true');
       sheetBackdrop.hidden = true;
       document.documentElement.classList.remove('sheet-open');
+      previousFocus?.focus();
     };
     quickAddButtons.forEach((button) => button.addEventListener('click', openSheet));
     closeSheetButton?.addEventListener('click', closeSheet);
     sheetBackdrop.addEventListener('click', closeSheet);
     sheet.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSheet));
     document.addEventListener('keydown', (event) => event.key === 'Escape' && closeSheet());
+    sheet.addEventListener('keydown', (event) => {
+      if (event.key !== 'Tab') return;
+      const focusable = [...sheet.querySelectorAll(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
   }
 
   const healthToggle = document.querySelector('[data-health-toggle]');
@@ -101,6 +120,26 @@
     });
     document.addEventListener('click', (event) => {
       if (!event.target.closest('.command-search')) hideResults();
+    });
+  }
+
+  document.querySelectorAll('.toast').forEach((toast, index) => {
+    window.setTimeout(() => {
+      toast.classList.add('toast-leave');
+      toast.addEventListener('animationend', () => toast.remove(), {once: true});
+    }, 4200 + (index * 250));
+  });
+
+  const passwordInput = document.querySelector('[data-password-input]');
+  const passwordToggle = document.querySelector('[data-password-toggle]');
+  if (passwordInput && passwordToggle) {
+    passwordToggle.addEventListener('click', () => {
+      const isVisible = passwordInput.type === 'text';
+      passwordInput.type = isVisible ? 'password' : 'text';
+      passwordToggle.textContent = isVisible ? 'הצגה' : 'הסתרה';
+      passwordToggle.setAttribute('aria-label', isVisible ? 'הצגת הסיסמה' : 'הסתרת הסיסמה');
+      passwordToggle.setAttribute('aria-pressed', String(!isVisible));
+      passwordInput.focus();
     });
   }
 

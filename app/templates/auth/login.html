@@ -9,10 +9,25 @@
     <p class="muted">מוזמנים, הושבה, ספקים, קניות ועוד.</p>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
-      <label>{{ form.email.label }}{{ form.email(autocomplete="email", inputmode="email") }}</label>
-      {% for error in form.email.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
-      <label>{{ form.password.label }}{{ form.password(autocomplete="current-password") }}</label>
-      {% for error in form.password.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      {% if form.email.errors or form.password.errors %}
+      <div class="login-alert" role="alert" aria-live="polite">
+        <span aria-hidden="true">!</span>
+        <div><strong>לא הצלחנו להתחבר</strong><small>{{ (form.password.errors or form.email.errors)[0] }}</small></div>
+      </div>
+      {% endif %}
+      <div class="login-field">
+        {{ form.email.label }}
+        {{ form.email(class_="login-input", autocomplete="email", inputmode="email", placeholder="name@example.com", aria_invalid="true" if form.email.errors else "false") }}
+        {% for error in form.email.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
+      <div class="login-field">
+        {{ form.password.label }}
+        <div class="password-input-wrap">
+          {{ form.password(class_="login-input", autocomplete="current-password", placeholder="לפחות 8 תווים", aria_invalid="true" if form.password.errors else "false", data_password_input="") }}
+          <button class="password-toggle" type="button" data-password-toggle aria-label="הצגת הסיסמה" aria-pressed="false">הצגה</button>
+        </div>
+        {% for error in form.password.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
       <label class="checkbox-row">{{ form.remember() }}<span>{{ form.remember.label.text }}</span></label>
       {{ form.submit(class_="primary-button") }}
     </form>

@@ -17,7 +17,7 @@
   <article class="hero-card countdown-card">
     <div>
       <p>הספירה לאחור</p>
-      <strong>{% if wedding and wedding.days_until is not none %}{{ wedding.days_until }} ימים{% else %}הגדירו תאריך{% endif %}</strong>
+      <strong>{% if wedding and wedding.days_until is not none and wedding.days_until >= 0 %}{{ wedding.days_until }} ימים{% elif wedding and wedding.days_until is not none %}מזל טוב!{% else %}הגדירו תאריך{% endif %}</strong>
       <span>{% if wedding and wedding.event_date %}עד החופה · {{ wedding.event_date.strftime('%d.%m.%Y') }}{% endif %}{% if wedding and wedding.hebrew_date %} · {{ wedding.hebrew_date }}{% endif %}</span>
     </div>
     <span class="countdown-heart" aria-hidden="true">♥</span>
@@ -27,7 +27,7 @@
     <div class="health-score" style="--score: {{ health_score }}"><span>{{ health_score }}%</span></div>
     <div class="health-copy">
       <p class="eyebrow">מצב ההכנות</p>
-      <h2>Wedding Health</h2>
+      <h2>מדד ההכנות</h2>
       <div class="health-bar"><span style="width: {{ health_score }}%"></span></div>
       <button type="button" class="health-details-toggle" data-health-toggle aria-expanded="false">מה מרכיב את הציון?⌄</button>
     </div>
@@ -39,6 +39,28 @@
       {% endfor %}
     </div>
   </article>
+</section>
+
+<section class="planning-snapshot" aria-label="תמונת מצב מהירה">
+  <article class="snapshot-phase">
+    <span class="snapshot-icon" aria-hidden="true">✦</span>
+    <div><small>שלב ההכנות</small><strong>{{ planning_phase }}</strong><p>{{ planning_hint }}</p></div>
+  </article>
+  <a href="{{ url_for('guests.index') }}" class="snapshot-stat">
+    <div><small>אישורי הגעה</small><strong>{{ metrics.rsvp_percent }}%</strong></div>
+    <span class="snapshot-track"><i style="width: {{ metrics.rsvp_percent }}%"></i></span>
+    <em>{{ metrics.confirmed }} אישרו מתוך {{ metrics.guests }}</em>
+  </a>
+  <a href="{{ url_for('budget.index') }}" class="snapshot-stat">
+    <div><small>ניצול התקציב</small><strong>{{ metrics.budget_usage_percent }}%</strong></div>
+    <span class="snapshot-track budget"><i style="width: {{ metrics.budget_usage_percent }}%"></i></span>
+    <em>{% if metrics.budget_target %}₪{{ '{:,.0f}'.format(metrics.budget_committed|float) }} מתוך ₪{{ '{:,.0f}'.format(metrics.budget_target|float) }}{% else %}עדיין לא הוגדר תקציב יעד{% endif %}</em>
+  </a>
+  <a href="{{ url_for('tasks.index') }}" class="snapshot-stat">
+    <div><small>השלמת משימות</small><strong>{{ metrics.task_completion_percent }}%</strong></div>
+    <span class="snapshot-track tasks"><i style="width: {{ metrics.task_completion_percent }}%"></i></span>
+    <em>{{ metrics.tasks }} משימות עדיין פתוחות</em>
+  </a>
 </section>
 
 <section class="metric-grid dashboard-metrics">
@@ -102,7 +124,8 @@
     <div class="panel-heading"><div><p class="eyebrow">הדברים הבאים ביומן</p><h2>ימים עד...</h2></div><a class="text-button" href="{{ url_for('tasks.index') }}">לכל המשימות</a></div>
     <div class="milestone-list">
       {% for task in upcoming_milestones %}
-      <a href="{{ url_for('tasks.edit', task_id=task.id) }}"><div><strong>{{ task.title }}</strong><small>{{ task.due_date.strftime('%d/%m/%Y') }}</small></div><em>{% set days=(task.due_date - today).days if today is defined else none %}{{ task.due_date.strftime('%d/%m') }}</em></a>
+      {% set days=(task.due_date - today).days %}
+      <a href="{{ url_for('tasks.edit', task_id=task.id) }}"><div><strong>{{ task.title }}</strong><small>{{ task.due_date.strftime('%d/%m/%Y') }}</small></div><em>{% if days < 0 %}באיחור{% elif days == 0 %}היום{% elif days == 1 %}מחר{% else %}עוד {{ days }} ימים{% endif %}</em></a>
       {% else %}<div class="empty-mini">הוסיפו תאריכי יעד למשימות כדי לראות את האירועים הקרובים.</div>{% endfor %}
     </div>
   </article>

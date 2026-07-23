@@ -9,7 +9,7 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}Wedding Planner{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=86">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=88">
 </head>
 <body>
   {% if current_user.is_authenticated %}
@@ -79,7 +79,7 @@
       <span aria-hidden="true">＋</span>
     </button>
     <div class="quick-add-backdrop" data-quick-add-backdrop hidden></div>
-    <section class="quick-add-sheet" data-quick-add-sheet aria-hidden="true" aria-label="הוספה מהירה">
+    <section class="quick-add-sheet" data-quick-add-sheet aria-hidden="true" aria-label="הוספה מהירה" role="dialog" aria-modal="true">
       <div class="quick-add-sheet-head"><div><p class="eyebrow">פעולה חדשה</p><h2>מה תרצו להוסיף?</h2></div><button type="button" class="sheet-close" data-quick-add-close aria-label="סגירה">×</button></div>
       <div class="quick-add-options">
         <a href="{{ url_for('guests.create') }}"><span>👤</span><strong>מוזמן חדש</strong><small>הוספה לרשימת המוזמנים</small></a>
@@ -92,6 +92,13 @@
     </section>
   </div>
   {% else %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="toast-stack public-toast-stack" role="status" aria-live="polite">
+          {% for category, message in messages %}<div class="toast {{ category }}">{{ message }}</div>{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     {% block public_content %}{% endblock %}
   {% endif %}
   <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>

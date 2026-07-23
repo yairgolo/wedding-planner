@@ -36,7 +36,7 @@ def login():
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
             return redirect(url_for("dashboard.index"))
-        flash("האימייל או הסיסמה אינם נכונים.", "danger")
+        form.password.errors.append("האימייל או הסיסמה אינם נכונים. בדקו את הפרטים ונסו שוב.")
     return render_template("auth/login.html", form=form)
 
 
