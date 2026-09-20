@@ -14,9 +14,9 @@ def test_dashboard_polish_renders_for_authenticated_user(client):
     response = client.get("/")
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Wedding Health" in body
-    assert "התקדמות לפי תחום" in body
-    assert "פעילות אחרונה" in body
+    assert "העדיפות עכשיו" in body
+    assert "מה כדאי לעשות עכשיו" in body
+    assert "משימות קרובות" in body
     assert "הוספה מהירה" in body
 
 
@@ -37,5 +37,5 @@ def test_recent_activity_is_visible_on_dashboard(app, client):
         )
         db.session.commit()
     login(client)
-    response = client.get("/")
+    response = client.get("/activity")
     assert "נוספה משימת בדיקה" in response.get_data(as_text=True)

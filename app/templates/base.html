@@ -27,25 +27,28 @@
         <span class="brand-mark">♥</span>
         <div><strong>Wedding Planner</strong><small>מרכז ניהול החתונה</small></div>
       </div>
-      <nav class="nav-list">
-        <a class="nav-link {% if request.blueprint == 'settings' %}active{% endif %}" href="{{ url_for('settings.wedding_profile') }}"><span>💍</span>פרופיל החתונה</a>
+      <nav class="nav-list" aria-label="ניווט ראשי">
         <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
-        <a class="nav-link {% if request.blueprint == 'event_day' %}active{% endif %}" href="{{ url_for('event_day.index') }}"><span>🎉</span>יום החתונה</a>
         <a class="nav-link {% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span>מוזמנים</a>
         <a class="nav-link {% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span>הזמנות ו-WhatsApp</a>
         <a class="nav-link {% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span>הושבה</a>
-        <a class="nav-link {% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span>קניות</a>
-        <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
         <a class="nav-link {% if request.blueprint == 'vendors' %}active{% endif %}" href="{{ url_for('vendors.index') }}"><span>🤝</span>ספקים</a>
         <a class="nav-link {% if request.blueprint == 'tasks' %}active{% endif %}" href="{{ url_for('tasks.index') }}"><span>📋</span>משימות</a>
-        <a class="nav-link {% if request.blueprint == 'gifts' %}active{% endif %}" href="{{ url_for('gifts.index') }}"><span>🎁</span>מתנות</a>
-        <a class="nav-link {% if request.blueprint == 'documents' %}active{% endif %}" href="{{ url_for('documents.index') }}"><span>📂</span>מסמכים</a>
-        <a class="nav-link {% if request.blueprint in ['activity','trash'] %}active{% endif %}" href="{{ url_for('activity.index') }}"><span>🕒</span>פעילות</a>
-        <a class="nav-link {% if request.blueprint == 'imports' %}active{% endif %}" href="{{ url_for('imports.index') }}"><span>📥</span>מרכז ייבוא</a>
-        <a class="nav-link {% if request.blueprint == 'exports' %}active{% endif %}" href="{{ url_for('exports.index') }}"><span>📤</span>מרכז ייצוא</a>
-        <a class="nav-link {% if request.blueprint == 'search' %}active{% endif %}" href="{{ url_for('search.index') }}"><span>🔍</span>חיפוש</a>
-        <a class="nav-link {% if request.blueprint == 'notifications' %}active{% endif %}" href="{{ url_for('notifications.index') }}"><span>🔔</span>התראות</a>
-        {% if current_user.is_admin %}<a class="nav-link {% if request.blueprint == 'system' %}active{% endif %}" href="{{ url_for('system.index') }}"><span>🩺</span>מצב המערכת</a>{% endif %}
+        <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
+        <a class="nav-link {% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span>קניות</a>
+        <a class="nav-link {% if request.blueprint == 'event_day' %}active{% endif %}" href="{{ url_for('event_day.index') }}"><span>🎉</span>יום החתונה</a>
+        <details class="nav-more" {% if request.blueprint in ['settings', 'gifts', 'documents', 'activity', 'trash', 'imports', 'exports', 'search', 'notifications', 'system'] %}open{% endif %}>
+          <summary>כלים נוספים</summary>
+          <div>
+            <a class="nav-link {% if request.blueprint == 'settings' %}active{% endif %}" href="{{ url_for('settings.wedding_profile') }}"><span>💍</span>פרופיל החתונה</a>
+            <a class="nav-link {% if request.blueprint == 'documents' %}active{% endif %}" href="{{ url_for('documents.index') }}"><span>📂</span>מסמכים</a>
+            <a class="nav-link {% if request.blueprint == 'gifts' %}active{% endif %}" href="{{ url_for('gifts.index') }}"><span>🎁</span>מתנות</a>
+            <a class="nav-link {% if request.blueprint in ['activity','trash'] %}active{% endif %}" href="{{ url_for('activity.index') }}"><span>🕒</span>פעילות וסל מחזור</a>
+            <a class="nav-link {% if request.blueprint == 'imports' %}active{% endif %}" href="{{ url_for('imports.index') }}"><span>📥</span>ייבוא נתונים</a>
+            <a class="nav-link {% if request.blueprint == 'exports' %}active{% endif %}" href="{{ url_for('exports.index') }}"><span>📤</span>ייצוא דוחות</a>
+            {% if current_user.is_admin %}<a class="nav-link {% if request.blueprint == 'system' %}active{% endif %}" href="{{ url_for('system.index') }}"><span>🩺</span>מצב המערכת</a>{% endif %}
+          </div>
+        </details>
       </nav>
       <form method="post" action="{{ url_for('auth.logout') }}" class="logout-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

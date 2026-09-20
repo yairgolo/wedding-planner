@@ -15,6 +15,6 @@ if str(PROJECT_DIR) not in sys.path:
 
 os.environ.setdefault("FLASK_ENV", "production")
 
-from app import create_app
+from app import create_app  # noqa: E402
 
 application = create_app("production")
