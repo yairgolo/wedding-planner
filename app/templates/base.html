@@ -9,7 +9,7 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}Wedding Planner{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=88">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=90">
 </head>
 <body>
   {% if current_user.is_authenticated %}
@@ -30,16 +30,16 @@
       <nav class="nav-list" aria-label="ניווט ראשי">
         <a class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}"><span>🏠</span>דשבורד</a>
         <a class="nav-link {% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>👥</span>מוזמנים</a>
-        <a class="nav-link {% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span>הזמנות ו-WhatsApp</a>
-        <a class="nav-link {% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span>הושבה</a>
         <a class="nav-link {% if request.blueprint == 'vendors' %}active{% endif %}" href="{{ url_for('vendors.index') }}"><span>🤝</span>ספקים</a>
         <a class="nav-link {% if request.blueprint == 'tasks' %}active{% endif %}" href="{{ url_for('tasks.index') }}"><span>📋</span>משימות</a>
-        <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
-        <a class="nav-link {% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span>קניות</a>
         <a class="nav-link {% if request.blueprint == 'event_day' %}active{% endif %}" href="{{ url_for('event_day.index') }}"><span>🎉</span>יום החתונה</a>
-        <details class="nav-more" {% if request.blueprint in ['settings', 'gifts', 'documents', 'activity', 'trash', 'imports', 'exports', 'search', 'notifications', 'system'] %}open{% endif %}>
-          <summary>כלים נוספים</summary>
+        <details class="nav-more" {% if request.blueprint not in ['dashboard', 'guests', 'vendors', 'tasks', 'event_day'] %}open{% endif %}>
+          <summary>ניהול נוסף</summary>
           <div>
+            <a class="nav-link {% if request.blueprint == 'invitations' %}active{% endif %}" href="{{ url_for('invitations.index') }}"><span>💌</span>הזמנות ו-WhatsApp</a>
+            <a class="nav-link {% if request.blueprint == 'seating' %}active{% endif %}" href="{{ url_for('seating.index') }}"><span>🪑</span>הושבה</a>
+            <a class="nav-link {% if request.blueprint == 'budget' %}active{% endif %}" href="{{ url_for('budget.index') }}"><span>💰</span>תקציב</a>
+            <a class="nav-link {% if request.blueprint == 'shopping' %}active{% endif %}" href="{{ url_for('shopping.index') }}"><span>🛒</span>קניות</a>
             <a class="nav-link {% if request.blueprint == 'settings' %}active{% endif %}" href="{{ url_for('settings.wedding_profile') }}"><span>💍</span>פרופיל החתונה</a>
             <a class="nav-link {% if request.blueprint == 'documents' %}active{% endif %}" href="{{ url_for('documents.index') }}"><span>📂</span>מסמכים</a>
             <a class="nav-link {% if request.blueprint == 'gifts' %}active{% endif %}" href="{{ url_for('gifts.index') }}"><span>🎁</span>מתנות</a>
@@ -93,6 +93,13 @@
         <a href="{{ url_for('gifts.create') }}"><span>🎁</span><strong>מתנה חדשה</strong><small>מעקב מתנות ותודות</small></a>
       </div>
     </section>
+    <nav class="bottom-nav" aria-label="ניווט מהיר">
+      <a class="{% if request.blueprint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard.index') }}"><span>⌂</span><small>בית</small></a>
+      <a class="{% if request.blueprint == 'guests' %}active{% endif %}" href="{{ url_for('guests.index') }}"><span>♙</span><small>מוזמנים</small></a>
+      <button type="button" class="quick-add" data-quick-add-open aria-label="הוספה מהירה">＋</button>
+      <a class="{% if request.blueprint == 'vendors' %}active{% endif %}" href="{{ url_for('vendors.index') }}"><span>⌘</span><small>ספקים</small></a>
+      <a class="{% if request.blueprint == 'event_day' %}active{% endif %}" href="{{ url_for('event_day.index') }}"><span>✦</span><small>האירוע</small></a>
+    </nav>
   </div>
   {% else %}
     {% with messages = get_flashed_messages(with_categories=true) %}

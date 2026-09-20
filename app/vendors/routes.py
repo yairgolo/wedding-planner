@@ -23,6 +23,10 @@ CATEGORY_LABELS = {
     "music": "DJ / מוזיקה",
     "photography": "צילום",
     "video": "וידאו",
+    "ceremony": "ניהול אירוע / אישורי הגעה",
+    "flowers": "פרחים ועיצוב שולחנות",
+    "bar": "בר ואלכוהול",
+    "catering": "קייטרינג",
     "dress": "שמלה",
     "suit": "חליפה",
     "beauty": "איפור ושיער",
@@ -30,6 +34,7 @@ CATEGORY_LABELS = {
     "attraction": "אטרקציות",
     "decor": "עיצוב",
     "transport": "הסעות",
+    "printing": "מיתוג והדפסות",
     "other": "אחר",
 }
 STATUS_LABELS = {

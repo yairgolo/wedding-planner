@@ -1,6 +1,7 @@
 from .audit_log import AuditLog
 from .budget import BudgetItem
 from .document import Document
+from .event_plan import EventScheduleItem, MusicRequest
 from .family import Family
 from .gift import Gift
 from .guest import Guest
@@ -19,8 +20,10 @@ __all__ = [
     "Guest",
     "Gift",
     "Document",
+    "EventScheduleItem",
     "InvitationActivity",
     "InvitationSettings",
+    "MusicRequest",
     "SeatingAssignment",
     "SeatingTable",
     "ShoppingItem",

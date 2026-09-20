@@ -1,10 +1,10 @@
 from pathlib import Path
 
 
-def test_mobile_navigation_uses_fab_without_bottom_nav():
+def test_mobile_navigation_has_quick_actions():
     html = Path("app/templates/base.html").read_text(encoding="utf-8")
     assert 'class="mobile-fab"' in html
-    assert 'class="bottom-nav"' not in html
+    assert 'class="bottom-nav"' in html
     assert "data-quick-add-open" in html
 
 

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import date
 
-from flask import Blueprint, abort, render_template, request
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import Guest, Task, Vendor, Wedding
+from app.models import EventScheduleItem, Guest, MusicRequest, Task, Vendor, Wedding
+
+from .forms import MusicRequestForm, ScheduleItemForm
 
 event_day_bp = Blueprint("event_day", __name__, url_prefix="/event-day")
 
@@ -69,6 +71,17 @@ def index():
         .limit(18)
     ).all()
 
+    schedule_items = db.session.scalars(
+        db.select(EventScheduleItem)
+        .where(EventScheduleItem.wedding_id == wedding.id)
+        .order_by(EventScheduleItem.time, EventScheduleItem.id)
+    ).all()
+    music_items = db.session.scalars(
+        db.select(MusicRequest)
+        .where(MusicRequest.wedding_id == wedding.id)
+        .order_by(MusicRequest.moment, MusicRequest.created_at)
+    ).all()
+
     timeline = []
     if wedding.ceremony_time:
         timeline.append(
@@ -99,4 +112,74 @@ def index():
         vendors=vendors,
         tasks=tasks,
         timeline=timeline,
+        schedule_items=schedule_items,
+        music_items=music_items,
+        schedule_form=ScheduleItemForm(prefix="schedule"),
+        music_form=MusicRequestForm(prefix="music"),
     )
+
+
+@event_day_bp.post("/schedule")
+@login_required
+def add_schedule_item():
+    wedding = current_wedding()
+    form = ScheduleItemForm(prefix="schedule")
+    if form.validate_on_submit():
+        db.session.add(EventScheduleItem(
+            wedding_id=wedding.id,
+            time=form.time.data,
+            title=form.title.data.strip(),
+            owner=(form.owner.data or "").strip() or None,
+            notes=(form.notes.data or "").strip() or None,
+        ))
+        db.session.commit()
+        flash("הפריט נוסף ללוח הזמנים.", "success")
+    else:
+        flash("יש למלא שעה ותיאור קצר.", "danger")
+    return redirect(url_for("event_day.index"))
+
+
+@event_day_bp.post("/schedule/<int:item_id>/delete")
+@login_required
+def delete_schedule_item(item_id: int):
+    wedding = current_wedding()
+    item = db.get_or_404(EventScheduleItem, item_id)
+    if item.wedding_id != wedding.id:
+        abort(404)
+    db.session.delete(item)
+    db.session.commit()
+    flash("הפריט הוסר מלוח הזמנים.", "success")
+    return redirect(url_for("event_day.index"))
+
+
+@event_day_bp.post("/music")
+@login_required
+def add_music_request():
+    wedding = current_wedding()
+    form = MusicRequestForm(prefix="music")
+    if form.validate_on_submit():
+        db.session.add(MusicRequest(
+            wedding_id=wedding.id,
+            title=form.title.data.strip(),
+            artist=(form.artist.data or "").strip() or None,
+            moment=form.moment.data,
+            notes=(form.notes.data or "").strip() or None,
+        ))
+        db.session.commit()
+        flash("השיר נוסף לפלייליסט.", "success")
+    else:
+        flash("יש למלא שם שיר או אמן.", "danger")
+    return redirect(url_for("event_day.index"))
+
+
+@event_day_bp.post("/music/<int:item_id>/delete")
+@login_required
+def delete_music_request(item_id: int):
+    wedding = current_wedding()
+    item = db.get_or_404(MusicRequest, item_id)
+    if item.wedding_id != wedding.id:
+        abort(404)
+    db.session.delete(item)
+    db.session.commit()
+    flash("השיר הוסר מהפלייליסט.", "success")
+    return redirect(url_for("event_day.index"))

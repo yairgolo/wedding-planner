@@ -65,6 +65,29 @@ def test_event_day_shows_vendor_and_tasks(client, app):
     assert "לא לשכוח טבעות" in body
 
 
+def test_event_day_can_plan_schedule_and_music(client):
+    login(client)
+    response = client.post(
+        "/event-day/schedule",
+        data={"schedule-time": "18:30", "schedule-title": "קבלת פנים", "schedule-owner": "דן"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert "קבלת פנים" in response.get_data(as_text=True)
+
+    response = client.post(
+        "/event-day/music",
+        data={
+            "music-title": "Perfect",
+            "music-artist": "Ed Sheeran",
+            "music-moment": "first_dance",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert "Perfect" in response.get_data(as_text=True)
+
+
 def test_admin_system_health(client):
     login(client)
     response = client.get("/admin/system")

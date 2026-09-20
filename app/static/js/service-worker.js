@@ -1,5 +1,5 @@
-const CACHE_NAME = 'wedding-planner-v86';
-const STATIC_ASSETS = ['/static/css/app.css?v=86', '/static/js/app.js', '/static/manifest.webmanifest'];
+const CACHE_NAME = 'wedding-planner-v90';
+const STATIC_ASSETS = ['/static/css/app.css?v=90', '/static/js/app.js', '/static/manifest.webmanifest'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
   self.skipWaiting();
