@@ -7,7 +7,7 @@
   <meta name="referrer" content="same-origin">
   <title>{% block title %}רגע של שמחה · הזמנות לחתונה{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/invite_portal.css', v='20260923-3') }}">
-  <script src="{{ url_for('static', filename='js/invite_portal.js', v='20260923-3') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/invite_portal.js', v='20260924-1') }}" defer></script>
 </head>
 <body>
   {% set home_url = url_for('invite_portal.admin_index') if admin else (url_for('invite_portal.user_index', token=sender.access_token) if sender else url_for('invite_portal.admin_login')) %}

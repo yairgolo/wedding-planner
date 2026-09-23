@@ -87,7 +87,7 @@
     try {
       data = await post(endpoint(config.prepareUrl), { sender_id: senderSelect?.value || "" });
       title.textContent = data.name;
-      phone.textContent = data.phone + " · נוסח: " + data.sender_name;
+      phone.textContent = (data.phone || "בחירת הנמען ב־WhatsApp") + " · נוסח: " + data.sender_name;
       textPreview.textContent = data.text;
       const response = await fetch(data.image_url, { credentials: "same-origin", cache: "no-store" });
       if (!response.ok) throw new Error("לא ניתן לטעון את תמונת ההזמנה. נסו שוב או עדכנו את המנהל.");
@@ -95,8 +95,9 @@
       imageFile = new File([blob], "wedding-invitation.jpg", { type: "image/jpeg" });
       document.querySelector("#dialogImage").src = data.image_url;
       document.querySelector("#downloadImage").href = data.image_url;
-      document.querySelector("#openWhatsapp").href =
-        "https://wa.me/" + data.whatsapp_phone + "?text=" + encodeURIComponent(data.text);
+      const whatsappLink = document.querySelector("#openWhatsapp");
+      whatsappLink.href = "https://wa.me/" + (data.whatsapp_phone || "") + "?text=" + encodeURIComponent(data.text);
+      whatsappLink.textContent = data.whatsapp_phone ? "פתיחת WhatsApp לנמען" : "פתיחת WhatsApp ובחירת נמען";
       preview.hidden = false;
       shareLaunched = false;
       const supported = window.isSecureContext && typeof navigator.share === "function"

@@ -228,15 +228,22 @@ def test_two_senders_cannot_confirm_each_others_attempt(client, portal):
     assert finish(client, data["attempt"], guest_id=3).status_code == 400
 
 
-def test_missing_or_invalid_phone_and_image_are_explained(client, portal):
+@pytest.mark.parametrize("prefix", ["/admin", "/u/groom-token"])
+def test_send_with_only_first_name_and_salutation(admin, portal, prefix):
     with portal.app_context():
         guest = db.session.get(InvitationPortalGuest, 1)
         guest.phone = ""
+        guest.last_name = ""
         db.session.commit()
-    response = prepare(client)
-    assert response.status_code == 400
-    assert "טלפון" in response.json["error"]
-    assert row(portal)[0] == "unsent"
+    response = prepare(admin, prefix=prefix)
+    assert response.status_code == 200
+    assert response.json["whatsapp_phone"] is None
+    assert response.json["text"].startswith("משה היקר")
+    assert finish(admin, response.json["attempt"], prefix=prefix).status_code == 200
+    assert row(portal)[0] == "sent"
+
+
+def test_missing_image_is_explained(client, portal):
     with portal.app_context():
         db.session.get(InvitationPortalGuest, 1).phone = "0501234567"
         db.session.get(InvitationPortalSettings, 1).image_filename = "missing.jpg"
@@ -245,6 +252,21 @@ def test_missing_or_invalid_phone_and_image_are_explained(client, portal):
     assert response.status_code == 400
     assert "תמונת" in response.json["error"]
     assert row(portal)[0] == "unsent"
+
+
+@pytest.mark.parametrize("prefix", ["/admin", "/u/groom-token"])
+def test_create_guest_without_optional_contact_fields(admin, portal, prefix):
+    response = admin.post(
+        ROOT + prefix + "/guest/new",
+        data={"first_name": "דוד", "salutation": "male", "side": "groom"},
+    )
+    assert response.status_code == 302
+    with portal.app_context():
+        guest = db.session.scalar(
+            db.select(InvitationPortalGuest).where(InvitationPortalGuest.first_name == "דוד")
+        )
+        assert guest is not None and not guest.last_name and not guest.phone
+    assert "יצחק והילה".encode() not in admin.get(ROOT + prefix + "/guest/new").data
 
 
 def test_confirmation_requires_preparation_and_valid_decision(client, portal):
@@ -556,7 +578,9 @@ def test_https_csrf_requires_same_origin_referrer(client, portal, operation):
     missing = client.post(path, base_url=origin, data=data)
     assert missing.status_code == 400
     assert b"referrer header is missing" in missing.data
-    foreign = client.post(path, base_url=origin, data=data, headers={"Referer": "https://other.test/"})
+    foreign = client.post(
+        path, base_url=origin, data=data, headers={"Referer": "https://other.test/"}
+    )
     assert foreign.status_code == 400
     good = client.post(path, base_url=origin, data=data, headers={"Referer": origin + page})
     assert good.status_code == (200 if operation == "prepare" else 302)

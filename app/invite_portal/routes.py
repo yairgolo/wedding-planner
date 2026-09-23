@@ -442,8 +442,6 @@ def send_actor(token=None):
 def prepare(guest_id, token=None):
     actor_sender, actor_admin = send_actor(token)
     guest = guest_or_404(guest_id, actor_sender)
-    if not whatsapp_phone(guest.phone):
-        abort(400, description="יש להוסיף מספר טלפון תקין דרך עריכת המוזמן.")
     item = settings()
     if (
         not item.image_filename

@@ -4,9 +4,9 @@
 <a class="back-link" href="{{ home_url }}">→ חזרה למוזמנים</a>
 <section class="form-card narrow"><p class="eyebrow">עוד אדם יקר, עוד רגע משותף</p><h1>{{ 'עריכת מוזמן' if guest.id else 'הוספת מוזמן' }}</h1>
 <form method="post" class="fields">{{ form.hidden_tag() }}{{ errors(form) }}
-<label>{{ form.first_name.label }}{{ form.first_name(placeholder="למשל: יצחק והילה") }}<small>רק שם זה יופיע בטקסט ההזמנה.</small></label>
-<label>{{ form.last_name.label }}{{ form.last_name() }}</label>
-<label>{{ form.phone.label }}{{ form.phone(inputmode="tel", dir="ltr", placeholder="0501234567") }}</label>
+<label>{{ form.first_name.label }}{{ form.first_name() }}<small>רק שם זה יופיע בטקסט ההזמנה.</small></label>
+<label>{{ form.last_name.label }}{{ form.last_name() }}<small>לא חובה</small></label>
+<label>{{ form.phone.label }}{{ form.phone(inputmode="tel", dir="ltr", placeholder="0501234567") }}<small>לא חובה — אפשר לבחור את הנמען ב־WhatsApp.</small></label>
 {% if admin %}<label>{{ form.side.label }}{{ form.side() }}</label>{% else %}<input type="hidden" name="side" value="{{ sender.side }}">{% endif %}
 <label>{{ form.salutation.label }}{{ form.salutation(required=true) }}</label>
 <label>{{ form.group_name.label }}{{ form.group_name(placeholder="משפחה / חברים / עבודה") }}</label>

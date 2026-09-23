@@ -63,16 +63,17 @@ async function run() {
   await page.getByRole("button", { name: "שמירת מוזמן" }).click();
   assert(page.url().endsWith("/guest/new"));
   await page.getByLabel("צורת פנייה").selectOption("female");
-  await page.getByLabel("טלפון WhatsApp").fill("0509999999");
   await page.getByRole("button", { name: "שמירת מוזמן" }).click();
   await page.waitForURL(base + "/admin");
-  passed("Mandatory salutation and create guest on mobile");
+  passed("Create guest on mobile with first name and salutation only");
   const noPhone = page.locator(".guest").filter({ hasText: "ללא טלפון בדיקה" });
   await noPhone.getByRole("button", { name: "שליחת הזמנה" }).click();
-  await page.locator("#sendError").waitFor({ state: "visible" });
-  assert((await page.locator("#sendError").textContent()).includes("טלפון"));
+  await page.locator("#previewArea").waitFor({ state: "visible" });
+  assert((await page.locator("#openWhatsapp").getAttribute("href")).startsWith("https://wa.me/?text="));
+  assert((await page.locator("#dialogPhone").textContent()).includes("בחירת הנמען"));
   await page.locator("#cancelSend").click();
-  passed("Click without phone gives actionable error instead of inert button");
+  await page.waitForLoadState("networkidle");
+  passed("Sharing without phone works and offers recipient selection in WhatsApp");
 
   const guest = () => page.locator(".guest").filter({ hasText: "משה לוי" });
   await page.evaluate(() => Object.defineProperty(navigator, "share", { configurable: true, value: undefined }));
