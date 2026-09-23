@@ -84,3 +84,21 @@ class InvitationPortalActivity(db.Model):
 
     guest = db.relationship("InvitationPortalGuest")
     sender = db.relationship("InvitationSender")
+
+
+class InvitationSendAttempt(db.Model):
+    """One explicit send operation, resumable after returning from the phone share sheet."""
+
+    __tablename__ = "invitation_send_attempts"
+    id = db.Column(db.String(64), primary_key=True, default=lambda: secrets.token_urlsafe(24))
+    guest_id = db.Column(
+        db.Integer, db.ForeignKey("invitation_portal_guests.id"), nullable=False, index=True
+    )
+    sender_id = db.Column(db.Integer, db.ForeignKey("invitation_senders.id"), nullable=True)
+    admin_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    prior_status = db.Column(db.String(20), nullable=False)
+    state = db.Column(db.String(20), nullable=False, default="pending", index=True)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+
+    sender = db.relationship("InvitationSender")

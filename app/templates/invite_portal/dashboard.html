@@ -1,1 +1,93 @@
-{% extends "invite_portal/base.html" %}{% block content %}<section class="hero"><div><p class="eyebrow">{% if admin %}ניהול מרכזי{% else %}הצד שלך{% endif %}</p><h1>{% if admin %}ניהול שליחת הזמנות{% else %}שלום {{ sender.name }}, שולחים הזמנות{% endif %}</h1><p>{% if admin %}כל הרשימה והמעקב במקום אחד.{% else %}כאן מופיעים רק מוזמני {{ labels[0][sender.side] }}.{% endif %}</p></div><div class="hero-flower">❀</div></section><section class="stats"><article><small>סה״כ</small><strong>{{ stats.values()|sum }}</strong></article><article><small>טרם נשלח</small><strong>{{ stats.unsent }}</strong></article><article><small>בטיפול</small><strong>{{ stats.preparing }}</strong></article><article><small>נשלח</small><strong>{{ stats.sent }}</strong></article></section><section class="toolbar"><form method="get"><input name="q" value="{{ request.args.get('q','') }}" placeholder="חיפוש שם או טלפון"><select name="status"><option value="">כל הסטטוסים</option>{% for key,label in labels[2].items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="action" type="submit">חיפוש</button></form><a class="action main" href="{{ url_for('invite_portal.admin_guest_form') if admin else url_for('invite_portal.user_guest_form', token=sender.access_token) }}">＋ הוספת מוזמן</a></section>{% if admin %}<section class="admin-tools"><a href="{{ url_for('invite_portal.export_excel') }}">↓ ייצוא Excel</a><form method="post" action="{{ url_for('invite_portal.import_excel') }}" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="file" name="file" accept=".xlsx,.csv" required><button>ייבוא Excel</button></form></section>{% endif %}<section class="guest-list">{% for guest in guests %}<article class="guest"><div class="guest-info"><span class="initial">{{ guest.first_name[:1] }}</span><div><strong>{{ guest.full_name }}</strong><small>{{ guest.phone or 'חסר טלפון' }} · {{ labels[1][guest.salutation] }}{% if admin %} · {{ labels[0][guest.side] }}{% endif %}</small></div></div><div class="state {{ guest.status }}">{{ labels[2][guest.status] }}{% if guest.sent_at %}<small>{{ guest.sent_at.strftime('%d/%m %H:%M') }}</small>{% endif %}</div><div class="guest-actions">{% if admin %}<a href="{{ url_for('invite_portal.admin_guest_form', guest_id=guest.id) }}">עריכה</a><form method="post" action="{{ url_for('invite_portal.admin_guest_status', guest_id=guest.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status">{% for key,label in labels[2].items() %}<option value="{{ key }}" {% if guest.status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button>עדכון</button></form>{% else %}<a href="{{ url_for('invite_portal.user_guest_form', token=sender.access_token, guest_id=guest.id) }}">עריכה</a><button class="action main send-button" type="button" data-guest="{{ guest.id }}" {% if not settings.image_filename or not guest.phone %}disabled{% endif %}>שליחת הזמנה</button>{% endif %}</div></article>{% else %}<div class="empty">עדיין אין מוזמנים להצגה.</div>{% endfor %}</section>{% if not admin %}<dialog id="sendDialog"><button class="close" type="button" data-close>×</button><p class="eyebrow">לפני שליחה</p><h2 id="dialogName"></h2><pre id="messagePreview"></pre><button class="action main" type="button" id="shareButton">פתיחת WhatsApp</button><div id="confirmArea" hidden><p>ההזמנה נשלחה ב־WhatsApp?</p><button class="action main" data-confirm="true">כן, סמן כנשלח</button><button class="action" data-confirm="false">לא, החזר לטרם נשלח</button></div></dialog><script>window.portalConfig={token:{{ sender.access_token|tojson }},csrf:{{ csrf_token()|tojson }},prepareUrl:{{ url_for('invite_portal.prepare_send',token=sender.access_token,guest_id=0)|tojson }},confirmUrl:{{ url_for('invite_portal.confirm_send',token=sender.access_token,guest_id=0)|tojson }}}</script><script src="{{ url_for('static',filename='js/invite_portal.js') }}" defer></script>{% endif %}{% endblock %}
+{% extends "invite_portal/base.html" %}
+{% block content %}
+<section class="welcome">
+  <div class="welcome-copy">
+    <p class="eyebrow">THE WEDDING INVITATION</p>
+    <h1>השמחה מתחילה<br>בהזמנה אישית.</h1>
+    <p>{% if admin %}כל האנשים היקרים לכם, וכל ההזמנות — במקום אחד.{% else %}שלום {{ sender.name }}, אלה המוזמנים מצד {{ side_labels[sender.side] }}.{% endif %}</p>
+    <a class="button primary" href="{{ url_for('invite_portal.admin_guest_form') if admin else url_for('invite_portal.user_guest_form', token=sender.access_token) }}">＋ הוספת מוזמן</a>
+  </div>
+  <div class="welcome-art" aria-hidden="true"><img src="{{ url_for('static', filename='images/invite-botanical.svg') }}" alt=""><span>With love,<br><i>always.</i></span></div>
+</section>
+<section class="stats" aria-label="סיכום ההזמנות">
+  <div><strong>{{ stats.values()|sum }}</strong><span>מוזמנים ברשימה</span></div>
+  <div><strong>{{ stats.unsent }}</strong><span>ממתינים להזמנה</span></div>
+  <div><strong>{{ stats.preparing }}</strong><span>בטיפול</span></div>
+  <div><strong>{{ stats.sent }}</strong><span>נשלחו באהבה</span></div>
+</section>
+{% if not settings.image_filename %}
+<div class="notice warning">עדיין אין תמונת הזמנה. {% if admin %}<a href="{{ url_for('invite_portal.admin_settings') }}">העלאת תמונה כדי להתחיל לשלוח ←</a>{% else %}בקשו מהמנהל להעלות אותה בעמוד ההזמנה.{% endif %}</div>
+{% endif %}
+<section class="list-section">
+  <div class="section-heading"><div><p class="eyebrow">האנשים שלכם</p><h2>רשימת המוזמנים <span class="count">{{ guests|length }}</span></h2></div>
+    <details class="excel-tools"><summary>ייבוא / ייצוא Excel</summary><div class="excel-content">
+      <p>עדכון רשומות לפי מזהה. למוזמן חדש משאירים את המזהה ריק.</p>
+      <a class="button" href="{{ url_for('invite_portal.export_excel') if admin else url_for('invite_portal.user_export_excel', token=sender.access_token) }}">הורדת הרשימה / תבנית</a>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('invite_portal.import_excel') if admin else url_for('invite_portal.user_import_excel', token=sender.access_token) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="excelFile">בחירת קובץ לייבוא</label><input id="excelFile" type="file" name="file" accept=".xlsx,.csv" required><button class="button">ייבוא קובץ</button>
+      </form>
+    </div></details>
+  </div>
+  <form class="filters" method="get">
+    <label class="search-field"><span class="sr-only">חיפוש שם או טלפון</span><input name="q" value="{{ request.args.get('q','') }}" placeholder="חיפוש שם או טלפון…"></label>
+    <label><span class="sr-only">סינון סטטוס</span><select name="status"><option value="">כל הסטטוסים</option>{% for key,label in status_labels.items() %}<option value="{{ key }}" {% if request.args.get('status') == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    {% if admin %}<label><span class="sr-only">סינון צד</span><select name="side"><option value="">שני הצדדים</option>{% for key,label in side_labels.items() %}<option value="{{ key }}" {% if request.args.get('side') == key %}selected{% endif %}>צד {{ label }}</option>{% endfor %}</select></label>{% endif %}
+    <label><span class="sr-only">סינון קבוצה</span><select name="group"><option value="">כל הקבוצות</option>{% for group in groups %}<option {% if request.args.get('group') == group %}selected{% endif %}>{{ group }}</option>{% endfor %}</select></label>
+    <button class="button">סינון</button><a class="text-link" href="{{ home_url }}">ניקוי</a>
+  </form>
+  <div class="guest-list">
+  {% for guest in guests %}
+    <article class="guest" data-guest-row="{{ guest.id }}" data-side="{{ guest.side }}">
+      <div class="guest-info"><span class="initial" aria-hidden="true">{{ guest.first_name[:1] }}</span><div><h3>{{ guest.full_name }}</h3><p><bdi>{{ guest.phone or 'ללא טלפון' }}</bdi><span class="dot-separator">·</span>{{ salutation_labels[guest.salutation] }}{% if admin %} · צד {{ side_labels[guest.side] }}{% endif %}{% if guest.group_name %} · {{ guest.group_name }}{% endif %}</p></div></div>
+      <span class="status {{ guest.status }}">{{ status_labels[guest.status] }}</span>
+      <div class="guest-actions">
+        <button class="button primary send-button" type="button" data-guest="{{ guest.id }}">{% if guest.status == 'preparing' %}המשך טיפול{% elif guest.status == 'sent' %}שליחה נוספת{% else %}שליחת הזמנה{% endif %}<span aria-hidden="true">↗</span></button>
+        <a class="button subtle" href="{{ url_for('invite_portal.admin_guest_form', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_form', token=sender.access_token, guest_id=guest.id) }}">עריכה</a>
+      </div>
+      <details class="guest-details"><summary>סטטוס ופרטים נוספים</summary><div>
+        {% if guest.sent_at %}<p>סומן כנשלח ב־{{ guest.sent_at.strftime('%d/%m/%Y %H:%M') }} (UTC){% if guest.last_sender %} · {{ guest.last_sender.name }}{% endif %} · {{ guest.attempts }} שליחות שאושרו</p>{% endif %}
+        {% if guest.notes %}<p>{{ guest.notes }}</p>{% endif %}
+        <form method="post" action="{{ url_for('invite_portal.admin_guest_status', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_status', token=sender.access_token, guest_id=guest.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label for="status-{{ guest.id }}">שינוי סטטוס ידני</label>
+          <select id="status-{{ guest.id }}" name="status">{% for key,label in status_labels.items() %}<option value="{{ key }}" {% if guest.status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="button">שמירת סטטוס</button>
+        </form>
+      </div></details>
+    </article>
+  {% else %}
+    <div class="empty"><span aria-hidden="true">♡</span><h3>הרשימה מחכה לאנשים שלכם</h3><p>הוסיפו מוזמן, ייבאו Excel או שנו את הסינון.</p></div>
+  {% endfor %}
+  </div>
+</section>
+<noscript><div class="notice warning">יש להפעיל JavaScript בדפדפן כדי לשתף הזמנות.</div></noscript>
+<dialog id="sendDialog" aria-labelledby="dialogName">
+  <div class="dialog-top"><p class="eyebrow">הזמנה אישית</p><button class="icon-button" type="button" data-close aria-label="סגירת חלון">×</button></div>
+  <h2 id="dialogName">מכינים את ההזמנה…</h2>
+  <p id="dialogPhone" class="muted"></p>
+  <div id="sendError" class="notice error" role="alert" hidden></div>
+  {% if admin %}<label id="senderChoice">שליחה בשם<select id="sendAs"><option value="">מנהל · נוסח משותף</option>{% for person in senders %}<option value="{{ person.id }}" data-side="{{ person.side }}">{{ person.name }} · {{ person.role }}</option>{% endfor %}</select><small>WhatsApp ייפתח מהמכשיר שלך; הבחירה קובעת את הנוסח והרישום.</small></label>{% endif %}
+  <div id="previewArea" hidden>
+    <img id="dialogImage" class="dialog-image" alt="תמונת ההזמנה">
+    <pre id="messagePreview"></pre>
+    <p class="share-help">בחרו WhatsApp בחלון השיתוף, ואז את הנמען שמופיע למעלה. ודאו שהתמונה והטקסט מצורפים לפני השליחה.</p>
+    <button class="button primary full" type="button" id="shareButton">שיתוף תמונה וטקסט ↗</button>
+    <div id="fallbackHelp" class="notice warning" hidden>שיתוף תמונה אינו זמין בדפדפן הזה. אפשר להוריד את התמונה ולצרף אותה ב־WhatsApp ידנית.</div>
+    <details class="manual-share" id="manualShare"><summary>אפשרות נוספת: פתיחת שיחה וצירוף ידני</summary>
+      <div class="button-row"><a class="button" id="downloadImage" download="wedding-invitation.jpg">הורדת תמונה</a><button type="button" class="button" id="copyMessage">העתקת טקסט</button><a class="button" id="openWhatsapp" target="_blank" rel="noopener noreferrer">פתיחת WhatsApp לנמען</a></div>
+      <small>פתיחת השיחה מכינה טקסט בלבד. יש לצרף את התמונה שהורדתם.</small>
+    </details>
+  </div>
+  <div id="confirmArea" hidden>
+    <h3>ההזמנה באמת נשלחה?</h3><p>רק האישור שלכם ישנה את הסטטוס ל״נשלח״.</p>
+    <button class="button primary full" type="button" data-confirm="true">כן, שלחתי את ההזמנה ✓</button>
+    <button class="button full" type="button" data-confirm="false">לא נשלח — ביטול הפעולה</button>
+  </div>
+  <button class="button full subtle" id="cancelSend" type="button">ביטול וחזרה לרשימה</button>
+</dialog>
+<script id="portalConfig" type="application/json">{{ {
+  'csrf': csrf_token(),
+  'prepareUrl': url_for('invite_portal.admin_prepare_send', guest_id=0) if admin else url_for('invite_portal.prepare_send', token=sender.access_token, guest_id=0),
+  'confirmUrl': url_for('invite_portal.admin_confirm_send', guest_id=0) if admin else url_for('invite_portal.confirm_send', token=sender.access_token, guest_id=0)
+}|tojson }}</script>
+{% endblock %}

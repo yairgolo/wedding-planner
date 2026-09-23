@@ -1,0 +1,6 @@
+{% extends "invite_portal/base.html" %}
+{% from "invite_portal/macros.html" import errors %}
+{% block content %}<section class="form-card narrow"><p class="eyebrow">במילים שלך</p><h1>הנוסח האישי שלי</h1><p>שלוש גרסאות לאותה שמחה. {name} יוחלף בשם הפרטי של המוזמן.</p>
+<form method="post" class="fields">{{ form.hidden_tag() }}{{ errors(form) }}
+{% for field in [form.male_template,form.female_template,form.plural_template] %}<label class="wide">{{ field.label }}{{ field(rows=6) }}</label>{% endfor %}
+<div class="button-row wide">{{ form.submit(class_="button primary") }}<a class="button" href="{{ home_url }}">חזרה</a></div></form></section>{% endblock %}

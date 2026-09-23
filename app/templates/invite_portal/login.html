@@ -1,1 +1,11 @@
-{% extends "invite_portal/base.html" %}{% block title %}כניסת מנהל | שולחים הזמנה{% endblock %}{% block content %}<section class="login-card"><span class="flower">✿</span><p class="eyebrow">ניהול הזמנות</p><h1>כניסת מנהל</h1><p>הכניסה הזו נפרדת לחלוטין מאתר ניהול החתונה.</p><form method="post">{{ form.hidden_tag() }}<label>{{ form.email.label }}{{ form.email(autocomplete="username", inputmode="email") }}</label><label>{{ form.password.label }}{{ form.password(autocomplete="current-password") }}</label>{% for error in form.password.errors %}<small class="error">{{ error }}</small>{% endfor %}{{ form.submit(class_="action main") }}</form></section>{% endblock %}
+{% extends "invite_portal/base.html" %}
+{% from "invite_portal/macros.html" import errors %}
+{% block content %}
+<section class="login-layout"><div class="login-art"><img src="{{ url_for('static',filename='images/invite-botanical.svg') }}" alt=""><p>Every invitation<br><i>holds a little joy.</i></p></div>
+<div class="login-card"><p class="eyebrow">ברוכים הבאים</p><h1>רגע לפני<br>ששולחים שמחה.</h1><p>כניסת מנהל לניהול ההזמנות שלכם.</p>
+<form method="post">{{ form.hidden_tag() }}{{ errors(form) }}
+<label>{{ form.email.label }}{{ form.email(autocomplete="username", inputmode="email", dir="ltr") }}</label>
+<label>{{ form.password.label }}{{ form.password(autocomplete="current-password") }}</label>
+{{ form.submit(class_="button primary full") }}
+</form><small class="muted">בני המשפחה נכנסים דרך הקישור האישי שקיבלו.</small></div></section>
+{% endblock %}

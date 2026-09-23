@@ -11,7 +11,12 @@ from wtforms import (
 from wtforms.validators import DataRequired, Length, Optional
 
 SIDE_CHOICES = [("groom", "צד החתן"), ("bride", "צד הכלה")]
-SALUTATION_CHOICES = [("male", "זכר"), ("female", "נקבה"), ("plural", "רבים")]
+SALUTATION_CHOICES = [
+    ("", "בחירת צורת פנייה…"),
+    ("male", "זכר"),
+    ("female", "נקבה"),
+    ("plural", "רבים"),
+]
 
 
 class PortalLoginForm(FlaskForm):
@@ -24,9 +29,9 @@ class SenderForm(FlaskForm):
     name = StringField("שם השולח", validators=[DataRequired(), Length(max=120)])
     role = StringField("תפקיד", validators=[DataRequired(), Length(max=120)])
     side = SelectField("צד", choices=SIDE_CHOICES, validators=[DataRequired()])
-    male_template = TextAreaField("נוסח לזכר", validators=[DataRequired()])
-    female_template = TextAreaField("נוסח לנקבה", validators=[DataRequired()])
-    plural_template = TextAreaField("נוסח לרבים", validators=[DataRequired()])
+    male_template = TextAreaField("נוסח לזכר", validators=[DataRequired(), Length(max=5000)])
+    female_template = TextAreaField("נוסח לנקבה", validators=[DataRequired(), Length(max=5000)])
+    plural_template = TextAreaField("נוסח לרבים", validators=[DataRequired(), Length(max=5000)])
     is_active = BooleanField("הקישור פעיל", default=True)
     submit = SubmitField("שמירה")
 
@@ -45,3 +50,10 @@ class PortalGuestForm(FlaskForm):
 class ImageForm(FlaskForm):
     image = FileField("תמונת ההזמנה", validators=[FileAllowed(["jpg", "jpeg", "png", "webp"])])
     submit = SubmitField("העלאת תמונה")
+
+
+class MessageForm(FlaskForm):
+    male_template = TextAreaField("נוסח לזכר", validators=[DataRequired(), Length(max=5000)])
+    female_template = TextAreaField("נוסח לנקבה", validators=[DataRequired(), Length(max=5000)])
+    plural_template = TextAreaField("נוסח לרבים", validators=[DataRequired(), Length(max=5000)])
+    submit = SubmitField("שמירת הנוסחים שלי")

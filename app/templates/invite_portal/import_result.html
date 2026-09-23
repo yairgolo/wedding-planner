@@ -1,0 +1,2 @@
+{% extends "invite_portal/base.html" %}
+{% block content %}<section class="form-card narrow"><h1>צריך לתקן את הקובץ</h1><p>לא נשמרו שינויים. תקנו את השורות הבאות והעלו מחדש.</p><ul class="error-list">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul><a class="button primary" href="{{ home_url }}">חזרה לרשימה</a></section>{% endblock %}

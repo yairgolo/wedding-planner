@@ -1,1 +1,16 @@
-{% extends "invite_portal/base.html" %}{% block content %}<section class="form-card"><p class="eyebrow">מוזמן</p><h1>{% if guest.id %}עריכת מוזמן{% else %}הוספת מוזמן{% endif %}</h1><form method="post" class="fields">{{ form.hidden_tag() }}<label>{{ form.first_name.label }}{{ form.first_name(placeholder="למשל: יצחק והילה") }}</label><label>{{ form.last_name.label }}{{ form.last_name() }}</label><label>{{ form.phone.label }}{{ form.phone(inputmode="tel",placeholder="0501234567") }}</label>{% if admin %}<label>{{ form.side.label }}{{ form.side() }}</label>{% else %}{{ form.side(type="hidden") }}{% endif %}<label>{{ form.salutation.label }}{{ form.salutation() }}<small>חובה לבחור ידנית כדי למנוע טעויות.</small></label><label>{{ form.group_name.label }}{{ form.group_name() }}</label><label class="wide">{{ form.notes.label }}{{ form.notes(rows=3) }}</label>{{ form.submit(class_="action main") }}</form></section>{% endblock %}
+{% extends "invite_portal/base.html" %}
+{% from "invite_portal/macros.html" import errors %}
+{% block content %}
+<a class="back-link" href="{{ home_url }}">→ חזרה למוזמנים</a>
+<section class="form-card narrow"><p class="eyebrow">עוד אדם יקר, עוד רגע משותף</p><h1>{{ 'עריכת מוזמן' if guest.id else 'הוספת מוזמן' }}</h1>
+<form method="post" class="fields">{{ form.hidden_tag() }}{{ errors(form) }}
+<label>{{ form.first_name.label }}{{ form.first_name(placeholder="למשל: יצחק והילה") }}<small>רק שם זה יופיע בטקסט ההזמנה.</small></label>
+<label>{{ form.last_name.label }}{{ form.last_name() }}</label>
+<label>{{ form.phone.label }}{{ form.phone(inputmode="tel", dir="ltr", placeholder="0501234567") }}</label>
+{% if admin %}<label>{{ form.side.label }}{{ form.side() }}</label>{% else %}<input type="hidden" name="side" value="{{ sender.side }}">{% endif %}
+<label>{{ form.salutation.label }}{{ form.salutation(required=true) }}</label>
+<label>{{ form.group_name.label }}{{ form.group_name(placeholder="משפחה / חברים / עבודה") }}</label>
+<label class="wide">{{ form.notes.label }}{{ form.notes(rows=3) }}</label>
+<div class="button-row wide">{{ form.submit(class_="button primary") }}<a class="button" href="{{ home_url }}">ביטול</a></div>
+</form></section>
+{% endblock %}

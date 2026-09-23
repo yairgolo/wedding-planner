@@ -1,1 +1,13 @@
-{% extends "invite_portal/base.html" %}{% block content %}<section class="form-card"><p class="eyebrow">הזמנה אחת לכולם</p><h1>תמונת ההזמנה</h1>{% if settings.image_filename %}<img class="invite-image" src="{{ url_for('invite_portal.image') }}?v={{ settings.updated_at.timestamp()|int }}" alt="תמונת הזמנה">{% else %}<p>עדיין לא הועלתה תמונה.</p>{% endif %}<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{{ form.image(accept="image/png,image/jpeg,image/webp") }}{{ form.submit(class_="action main") }}</form></section>{% endblock %}
+{% extends "invite_portal/base.html" %}
+{% from "invite_portal/macros.html" import errors %}
+{% block content %}
+<div class="page-heading"><p class="eyebrow">נייר, מילים והרבה אהבה</p><h1>ההזמנה שלכם</h1><p>תמונה אחת שמשותפת לכל השולחים. הנוסח מותאם אישית לכל מוזמן.</p></div>
+<div class="settings-grid"><section class="form-card">
+<h2>תמונת ההזמנה</h2><p>בחרו קובץ JPG, PNG או WEBP, עד 10MB.</p>
+<form method="post" enctype="multipart/form-data">{{ form.hidden_tag() }}{{ errors(form) }}
+<label for="image" class="upload-zone"><span aria-hidden="true">↑</span><strong>בחרו את התמונה שלכם</strong>{{ form.image(accept="image/png,image/jpeg,image/webp", required=true) }}</label>
+{{ form.submit(class_="button primary full") }}</form>
+<p class="muted">שינוי התמונה יחול על ההזמנות הבאות. נוסחים אישיים עורכים בעמוד השולחים.</p>
+<a class="text-link" href="{{ url_for('invite_portal.admin_senders') }}">עריכת נוסחי השולחים ←</a>
+</section><aside class="invitation-frame">{% if settings.image_filename %}<img class="invite-image" src="{{ url_for('invite_portal.image') }}" alt="תמונת ההזמנה הנוכחית">{% else %}<img class="placeholder-art" src="{{ url_for('static',filename='images/invite-botanical.svg') }}" alt=""><p>כאן תופיע ההזמנה שלכם</p>{% endif %}</aside></div>
+{% endblock %}

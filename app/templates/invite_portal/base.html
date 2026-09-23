@@ -3,21 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#815d67">
-  <title>{% block title %}שולחים הזמנה{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/invite_portal.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/invite_portal_mobile.css') }}">
+  <meta name="theme-color" content="#f8f7f3">
+  <meta name="referrer" content="no-referrer">
+  <title>{% block title %}רגע של שמחה · הזמנות לחתונה{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/invite_portal.css', v='20260923-3') }}">
+  <script src="{{ url_for('static', filename='js/invite_portal.js', v='20260923-3') }}" defer></script>
 </head>
 <body>
-  <main class="portal-shell">
-    <header class="portal-header">
-      <a class="brand" href="{{ url_for('invite_portal.admin_index') if admin else url_for('invite_portal.user_index', token=sender.access_token) }}"><span>✿</span><b>שולחים הזמנה</b></a>
-      {% if admin %}
-      <nav><a href="{{ url_for('invite_portal.admin_index') }}">מוזמנים</a><a href="{{ url_for('invite_portal.admin_senders') }}">שולחים</a><a href="{{ url_for('invite_portal.admin_settings') }}">הגדרות</a><form method="post" action="{{ url_for('invite_portal.admin_logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>יציאה</button></form></nav>
-      {% elif sender %}<span class="sender-chip">{{ sender.role }} · {{ sender.name }}</span>{% endif %}
-    </header>
-    {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+  {% set home_url = url_for('invite_portal.admin_index') if admin else (url_for('invite_portal.user_index', token=sender.access_token) if sender else url_for('invite_portal.admin_login')) %}
+  <a class="skip-link" href="#main">דילוג לתוכן</a>
+  <header class="site-header">
+    <a class="brand" href="{{ home_url }}"><span class="brand-mark" aria-hidden="true">❧</span><span>רגע של שמחה<small>ההזמנה שלכם. עם נגיעה אישית.</small></span></a>
+    {% if admin %}
+    <nav class="main-nav" aria-label="ניווט ראשי">
+      <a href="{{ url_for('invite_portal.admin_index') }}" {% if request.endpoint == 'invite_portal.admin_index' %}aria-current="page"{% endif %}>מוזמנים</a>
+      <a href="{{ url_for('invite_portal.admin_senders') }}" {% if request.endpoint in ['invite_portal.admin_senders', 'invite_portal.renew_sender_link'] %}aria-current="page"{% endif %}>שולחים</a>
+      <a href="{{ url_for('invite_portal.admin_settings') }}" {% if request.endpoint == 'invite_portal.admin_settings' %}aria-current="page"{% endif %}>ההזמנה</a>
+      <form method="post" action="{{ url_for('invite_portal.admin_logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="nav-exit">יציאה</button></form>
+    </nav>
+    {% elif sender %}
+    <nav class="main-nav" aria-label="ניווט ראשי">
+      <a href="{{ home_url }}" {% if request.endpoint == 'invite_portal.user_index' %}aria-current="page"{% endif %}>המוזמנים</a>
+      <a href="{{ url_for('invite_portal.user_message', token=sender.access_token) }}" {% if request.endpoint == 'invite_portal.user_message' %}aria-current="page"{% endif %}>הנוסח שלי</a>
+    </nav>
+    {% endif %}
+  </header>
+  <main id="main" class="portal-shell">
+    {% with messages=get_flashed_messages(with_categories=true) %}
+      {% for category,message in messages %}<div role="status" class="notice {{ category }}">{{ message }}</div>{% endfor %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
+  <footer class="site-footer">כל הזמנה היא התחלה של רגע משותף <span aria-hidden="true">♡</span></footer>
+  <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

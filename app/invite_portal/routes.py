@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import csv
 import secrets
 from datetime import datetime, timezone
-from io import BytesIO, StringIO
 from pathlib import Path
 
 from flask import (
@@ -15,15 +13,13 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_file,
     send_from_directory,
     session,
     url_for,
 )
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, PatternFill
 from PIL import Image, UnidentifiedImageError
-from sqlalchemy import or_
+from sqlalchemy import or_, update
+from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash
 
 from app.extensions import db, limiter
@@ -31,126 +27,103 @@ from app.models import (
     InvitationPortalActivity,
     InvitationPortalGuest,
     InvitationPortalSettings,
+    InvitationSendAttempt,
     InvitationSender,
     User,
 )
 
-from .forms import ImageForm, PortalGuestForm, PortalLoginForm, SenderForm
+from .forms import ImageForm, MessageForm, PortalGuestForm, PortalLoginForm, SenderForm
 
 invite_portal_bp = Blueprint("invite_portal", __name__, url_prefix="/invite-manager")
-
 DEFAULT_TEMPLATES = {
     "male": (
-        "{name} היקר,\n\nנשמח מאוד להזמינך לחגוג איתנו ביום המיוחד שלנו."
-        "\nנשמח לראותך איתנו. 🤍"
+        "{name} היקר,\n\nבהתרגשות גדולה, נשמח להזמינך לחגוג איתנו את יום חתונתנו."
+        "\nהנוכחות שלך תהפוך את השמחה לשלמה.\n\nמחכים לחגוג יחד 🤍"
     ),
     "female": (
-        "{name} היקרה,\n\nנשמח מאוד להזמינך לחגוג איתנו ביום המיוחד שלנו."
-        "\nנשמח לראותך איתנו. 🤍"
+        "{name} היקרה,\n\nבהתרגשות גדולה, נשמח להזמינך לחגוג איתנו את יום חתונתנו."
+        "\nהנוכחות שלך תהפוך את השמחה לשלמה.\n\nמחכים לחגוג יחד 🤍"
     ),
     "plural": (
-        "{name} היקרים,\n\nנשמח מאוד להזמינכם לחגוג איתנו ביום המיוחד שלנו."
-        "\nנשמח לראותכם איתנו. 🤍"
+        "{name} היקרים,\n\nבהתרגשות גדולה, נשמח להזמינכם לחגוג איתנו את יום חתונתנו."
+        "\nהנוכחות שלכם תהפוך את השמחה לשלמה.\n\nמחכים לחגוג יחד 🤍"
     ),
 }
-HEADERS = [
-    "מזהה",
-    "שם פרטי",
-    "שם משפחה",
-    "טלפון",
-    "צד",
-    "צורת פנייה",
-    "קבוצה",
-    "סטטוס",
-    "נשלח על ידי",
-    "נשלח בתאריך",
-    "ניסיונות",
-    "הערה",
-]
 SIDE_LABELS = {"groom": "חתן", "bride": "כלה"}
 SALUTATION_LABELS = {"male": "זכר", "female": "נקבה", "plural": "רבים"}
 STATUS_LABELS = {"unsent": "טרם נשלח", "preparing": "בטיפול", "sent": "נשלח"}
-SIDE_VALUES = {**SIDE_LABELS, "חתן": "groom", "כלה": "bride"}
-SALUTATION_VALUES = {**SALUTATION_LABELS, "זכר": "male", "נקבה": "female", "רבים": "plural"}
-STATUS_VALUES = {**STATUS_LABELS, "טרם נשלח": "unsent", "בטיפול": "preparing", "נשלח": "sent"}
 
 
-def now() -> datetime:
+def now():
     return datetime.now(timezone.utc)
 
 
-def clean_phone(value: str | None) -> str | None:
-    cleaned = "".join(ch for ch in (value or "") if ch.isdigit() or ch == "+")
+def clean_phone(value):
+    cleaned = "".join(ch for ch in str(value or "") if ch.isdigit() or ch == "+")
+    # Excel sometimes removes the leading zero in an Israeli mobile number.
+    if len(cleaned) == 9 and cleaned.startswith("5"):
+        cleaned = "0" + cleaned
     return cleaned or None
 
 
-def settings() -> InvitationPortalSettings:
-    item = db.session.scalar(db.select(InvitationPortalSettings).limit(1))
-    if not item:
-        item = InvitationPortalSettings()
+def whatsapp_phone(value):
+    phone = clean_phone(value) or ""
+    if phone.startswith("00"):
+        phone = phone[2:]
+    if phone.startswith("0"):
+        phone = "972" + phone[1:]
+    phone = phone.lstrip("+")
+    return phone if phone.isascii() and phone.isdigit() and 8 <= len(phone) <= 15 else None
+
+
+def settings():
+    item = db.session.get(InvitationPortalSettings, 1)
+    if item is None:
+        item = InvitationPortalSettings(id=1)
         db.session.add(item)
         db.session.commit()
     return item
 
 
-def admin_id() -> int | None:
-    return session.get("invite_portal_admin_id")
-
-
-def require_admin() -> None:
-    user_id = admin_id()
+def admin_user():
+    user_id = session.get("invite_portal_admin_id")
     user = db.session.get(User, user_id) if user_id else None
-    if not user or not user.is_admin or not user.is_active:
-        abort(403)
+    return user if user and user.is_admin and user.is_active else None
 
 
-def sender_for_token(token: str) -> InvitationSender:
+def require_admin():
+    user = admin_user()
+    if not user:
+        abort(401, description="יש להתחבר מחדש כדי להמשיך.")
+    return user
+
+
+def sender_for_token(token):
     sender = db.session.scalar(
         db.select(InvitationSender).where(InvitationSender.access_token == token)
     )
     if not sender or not sender.is_active:
-        abort(404)
+        abort(404, description="הקישור אינו פעיל. בקשו מהמנהל קישור חדש.")
     return sender
 
 
-def readable_message(sender: InvitationSender, guest: InvitationPortalGuest) -> str:
-    template = getattr(sender, f"{guest.salutation}_template")
-    try:
-        return template.format(name=guest.first_name).strip()
-    except (KeyError, ValueError):
-        return template.replace("{name}", guest.first_name).strip()
-
-
-def visible_guests(sender: InvitationSender | None = None):
-    stmt = db.select(InvitationPortalGuest)
-    if sender:
-        stmt = stmt.where(InvitationPortalGuest.side == sender.side)
-    q = request.args.get("q", "").strip()
-    status = request.args.get("status", "").strip()
-    if q:
-        like = f"%{q}%"
-        stmt = stmt.where(
-            or_(
-                InvitationPortalGuest.first_name.ilike(like),
-                InvitationPortalGuest.last_name.ilike(like),
-                InvitationPortalGuest.phone.ilike(like),
-            )
-        )
-    if status in STATUS_LABELS:
-        stmt = stmt.where(InvitationPortalGuest.status == status)
-    return db.session.scalars(
-        stmt.order_by(InvitationPortalGuest.status, InvitationPortalGuest.first_name)
-    ).all()
-
-
-def guest_or_404(guest_id: int, sender: InvitationSender | None = None) -> InvitationPortalGuest:
+def guest_or_404(guest_id, sender=None):
     guest = db.get_or_404(InvitationPortalGuest, guest_id)
     if sender and guest.side != sender.side:
         abort(404)
     return guest
 
 
-def activity(guest: InvitationPortalGuest, sender: InvitationSender | None, action: str) -> None:
+def readable_message(sender, guest):
+    template = (
+        getattr(sender, f"{guest.salutation}_template")
+        if sender
+        else DEFAULT_TEMPLATES[guest.salutation]
+    )
+    return template.replace("{name}", guest.first_name).strip()
+
+
+def activity(guest, sender, action):
     db.session.add(
         InvitationPortalActivity(
             guest_id=guest.id, sender_id=sender.id if sender else None, action=action
@@ -158,10 +131,39 @@ def activity(guest: InvitationPortalGuest, sender: InvitationSender | None, acti
     )
 
 
+@invite_portal_bp.errorhandler(HTTPException)
+def portal_error(error):
+    if request.accept_mimetypes.best == "application/json":
+        return jsonify(ok=False, error=error.description), error.code
+    if error.code == 401:
+        return redirect(url_for("invite_portal.admin_login"))
+    return render_template(
+        "invite_portal/error.html",
+        admin=False,
+        sender=None,
+        code=error.code,
+        message=error.description,
+    ), error.code
+
+
+@invite_portal_bp.after_request
+def private_response(response):
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+@invite_portal_bp.context_processor
+def portal_context():
+    return dict(
+        side_labels=SIDE_LABELS, salutation_labels=SALUTATION_LABELS, status_labels=STATUS_LABELS
+    )
+
+
 @invite_portal_bp.route("/admin/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def admin_login():
-    if admin_id():
+    if admin_user():
         return redirect(url_for("invite_portal.admin_index"))
     form = PortalLoginForm()
     if form.validate_on_submit():
@@ -174,12 +176,11 @@ def admin_login():
             and user.is_active
             and check_password_hash(user.password_hash, form.password.data)
         ):
-            session.clear()
             session["invite_portal_admin_id"] = user.id
             session.permanent = True
             return redirect(url_for("invite_portal.admin_index"))
         form.password.errors.append("פרטי הכניסה אינם נכונים.")
-    return render_template("invite_portal/login.html", form=form, admin=True, sender=None)
+    return render_template("invite_portal/login.html", form=form, admin=False, sender=None)
 
 
 @invite_portal_bp.post("/admin/logout")
@@ -190,77 +191,159 @@ def admin_logout():
 
 @invite_portal_bp.get("/")
 def home():
-    return redirect(
-        url_for("invite_portal.admin_index") if admin_id() else url_for("invite_portal.admin_login")
+    return redirect(url_for("invite_portal.admin_index"))
+
+
+def dashboard(sender=None):
+    scope = db.select(InvitationPortalGuest)
+    if sender:
+        scope = scope.where(InvitationPortalGuest.side == sender.side)
+    all_guests = db.session.scalars(scope).all()
+    query = request.args.get("q", "").strip()
+    if query:
+        like = f"%{query}%"
+        scope = scope.where(
+            or_(
+                InvitationPortalGuest.first_name.ilike(like),
+                InvitationPortalGuest.last_name.ilike(like),
+                InvitationPortalGuest.phone.ilike(like),
+            )
+        )
+    for field, allowed in (("status", STATUS_LABELS), ("side", SIDE_LABELS)):
+        value = request.args.get(field, "")
+        if value in allowed:
+            scope = scope.where(getattr(InvitationPortalGuest, field) == value)
+    group = request.args.get("group", "")
+    if group:
+        scope = scope.where(InvitationPortalGuest.group_name == group)
+    return render_template(
+        "invite_portal/dashboard.html",
+        admin=sender is None,
+        sender=sender,
+        guests=db.session.scalars(scope.order_by(InvitationPortalGuest.first_name)).all(),
+        stats={key: sum(g.status == key for g in all_guests) for key in STATUS_LABELS},
+        groups=sorted({g.group_name for g in all_guests if g.group_name}),
+        settings=settings(),
+        senders=db.session.scalars(
+            db.select(InvitationSender)
+            .where(InvitationSender.is_active.is_(True))
+            .order_by(InvitationSender.name)
+        ).all()
+        if sender is None
+        else [],
     )
 
 
 @invite_portal_bp.get("/admin")
 def admin_index():
     require_admin()
-    guests = visible_guests()
-    all_guests = db.session.scalars(db.select(InvitationPortalGuest)).all()
-    stats = {key: sum(g.status == key for g in all_guests) for key in STATUS_LABELS}
-    return render_template(
-        "invite_portal/dashboard.html",
-        admin=True,
-        sender=None,
-        guests=guests,
-        stats=stats,
-        settings=settings(),
-        labels=(SIDE_LABELS, SALUTATION_LABELS, STATUS_LABELS),
-    )
+    return dashboard()
 
 
-@invite_portal_bp.route("/admin/guest/new", methods=["GET", "POST"])
-@invite_portal_bp.route("/admin/guest/<int:guest_id>/edit", methods=["GET", "POST"])
-def admin_guest_form(guest_id: int | None = None):
-    require_admin()
+@invite_portal_bp.get("/u/<token>")
+def user_index(token):
+    return dashboard(sender_for_token(token))
+
+
+def save_guest_form(guest_id=None, sender=None):
     guest = (
-        db.get_or_404(InvitationPortalGuest, guest_id)
+        guest_or_404(guest_id, sender)
         if guest_id
-        else InvitationPortalGuest(side="groom", salutation="male")
+        else InvitationPortalGuest(side=sender.side if sender else "groom", salutation="")
     )
     form = PortalGuestForm(obj=guest)
+    if sender:
+        form.side.data = sender.side
     if form.validate_on_submit():
+        # A manual edit supersedes an in-progress invitation.
+        invalidate_attempts(guest.id)
+        if guest.status == "preparing":
+            guest.status = "sent" if guest.sent_at else "unsent"
         form.populate_obj(guest)
         guest.phone = clean_phone(form.phone.data)
         db.session.add(guest)
         db.session.commit()
         flash("המוזמן נשמר.", "success")
-        return redirect(url_for("invite_portal.admin_index"))
+        return redirect(index_url(sender))
     return render_template(
-        "invite_portal/guest_form.html", form=form, admin=True, sender=None, guest=guest
+        "invite_portal/guest_form.html",
+        form=form,
+        guest=guest,
+        admin=sender is None,
+        sender=sender,
     )
 
 
-@invite_portal_bp.post("/admin/guest/<int:guest_id>/status")
-def admin_guest_status(guest_id: int):
+def index_url(sender=None):
+    return (
+        url_for("invite_portal.user_index", token=sender.access_token)
+        if sender
+        else url_for("invite_portal.admin_index")
+    )
+
+
+@invite_portal_bp.route("/admin/guest/new", methods=["GET", "POST"])
+@invite_portal_bp.route("/admin/guest/<int:guest_id>/edit", methods=["GET", "POST"])
+def admin_guest_form(guest_id=None):
     require_admin()
-    guest = db.get_or_404(InvitationPortalGuest, guest_id)
+    return save_guest_form(guest_id)
+
+
+@invite_portal_bp.route("/u/<token>/guest/new", methods=["GET", "POST"])
+@invite_portal_bp.route("/u/<token>/guest/<int:guest_id>/edit", methods=["GET", "POST"])
+def user_guest_form(token, guest_id=None):
+    return save_guest_form(guest_id, sender_for_token(token))
+
+
+def invalidate_attempts(guest_id):
+    if guest_id:
+        db.session.execute(
+            update(InvitationSendAttempt)
+            .where(
+                InvitationSendAttempt.guest_id == guest_id,
+                InvitationSendAttempt.state == "pending",
+            )
+            .values(state="cancelled")
+        )
+
+
+def change_status(guest, sender=None):
     status = request.form.get("status")
     if status not in STATUS_LABELS:
-        abort(400)
+        abort(400, description="סטטוס לא תקין.")
+    invalidate_attempts(guest.id)
     guest.status = status
-    if status != "sent":
-        guest.sent_at = None
-    activity(guest, None, f"status_{status}")
+    guest.sent_at = now() if status == "sent" else None
+    guest.last_sender_id = sender.id if sender and status == "sent" else None
+    activity(guest, sender, f"status_{status}")
     db.session.commit()
-    return redirect(url_for("invite_portal.admin_index", **request.args))
+    flash("הסטטוס עודכן.", "success")
+    return redirect(index_url(sender))
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/status")
+def admin_guest_status(guest_id):
+    require_admin()
+    return change_status(guest_or_404(guest_id))
+
+
+@invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/status")
+def user_guest_status(token, guest_id):
+    sender = sender_for_token(token)
+    return change_status(guest_or_404(guest_id, sender), sender)
 
 
 @invite_portal_bp.route("/admin/senders", methods=["GET", "POST"])
 @invite_portal_bp.route("/admin/senders/<int:sender_id>", methods=["GET", "POST"])
-def admin_senders(sender_id: int | None = None):
+def admin_senders(sender_id=None):
     require_admin()
     sender = (
         db.get_or_404(InvitationSender, sender_id)
         if sender_id
         else InvitationSender(
             side="groom",
-            male_template=DEFAULT_TEMPLATES["male"],
-            female_template=DEFAULT_TEMPLATES["female"],
-            plural_template=DEFAULT_TEMPLATES["plural"],
+            is_active=True,
+            **{f"{key}_template": value for key, value in DEFAULT_TEMPLATES.items()},
         )
     )
     form = SenderForm(obj=sender)
@@ -268,24 +351,35 @@ def admin_senders(sender_id: int | None = None):
         form.populate_obj(sender)
         db.session.add(sender)
         db.session.commit()
-        flash("פרופיל השולח נשמר. הקישור האישי מופיע לידו.", "success")
+        flash("פרופיל השולח נשמר.", "success")
         return redirect(url_for("invite_portal.admin_senders"))
-    senders = db.session.scalars(
-        db.select(InvitationSender).order_by(InvitationSender.side, InvitationSender.name)
-    ).all()
     return render_template(
         "invite_portal/senders.html",
         form=form,
         editing=sender_id is not None,
-        sender=sender,
-        senders=senders,
+        sender=None,
+        editing_sender=sender,
         admin=True,
-        side_labels=SIDE_LABELS,
+        senders=db.session.scalars(
+            db.select(InvitationSender).order_by(InvitationSender.side, InvitationSender.name)
+        ).all(),
     )
 
 
+@invite_portal_bp.route("/u/<token>/message", methods=["GET", "POST"])
+def user_message(token):
+    sender = sender_for_token(token)
+    form = MessageForm(obj=sender)
+    if form.validate_on_submit():
+        form.populate_obj(sender)
+        db.session.commit()
+        flash("הנוסחים האישיים נשמרו.", "success")
+        return redirect(index_url(sender))
+    return render_template("invite_portal/message.html", form=form, sender=sender, admin=False)
+
+
 @invite_portal_bp.post("/admin/senders/<int:sender_id>/renew")
-def renew_sender_link(sender_id: int):
+def renew_sender_link(sender_id):
     require_admin()
     sender = db.get_or_404(InvitationSender, sender_id)
     sender.access_token = secrets.token_urlsafe(32)
@@ -299,225 +393,179 @@ def admin_settings():
     require_admin()
     item = settings()
     form = ImageForm()
-    if form.validate_on_submit() and form.image.data:
-        try:
-            image = Image.open(form.image.data.stream)
-            image.verify()
-            form.image.data.stream.seek(0)
-            image = Image.open(form.image.data.stream).convert("RGB")
-        except (UnidentifiedImageError, OSError):
-            form.image.errors.append("הקובץ אינו תמונה תקינה.")
+    if form.validate_on_submit():
+        if not form.image.data:
+            form.image.errors.append("יש לבחור תמונה להעלאה.")
         else:
-            filename = f"invite-portal-{secrets.token_hex(8)}.jpg"
-            target = Path(current_app.config["UPLOAD_FOLDER"]) / filename
-            image.thumbnail((2400, 3200))
-            image.save(target, "JPEG", quality=92, optimize=True)
-            if item.image_filename:
-                (Path(current_app.config["UPLOAD_FOLDER"]) / item.image_filename).unlink(
-                    missing_ok=True
+            try:
+                image = Image.open(form.image.data.stream)
+                image.verify()
+                form.image.data.stream.seek(0)
+                image = Image.open(form.image.data.stream).convert("RGB")
+                image.thumbnail((2400, 3200))
+                filename = f"invite-portal-{secrets.token_hex(8)}.jpg"
+                image.save(
+                    Path(current_app.config["UPLOAD_FOLDER"]) / filename,
+                    "JPEG",
+                    quality=92,
+                    optimize=True,
                 )
-            item.image_filename = filename
-            db.session.commit()
-            flash("תמונת ההזמנה עודכנה.", "success")
-            return redirect(url_for("invite_portal.admin_settings"))
-    return render_template("invite_portal/settings.html", admin=True, form=form, settings=item)
+            except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+                form.image.errors.append("הקובץ אינו תמונה תקינה או שהוא גדול מדי.")
+            else:
+                # Keep earlier uploads so a share already being prepared remains usable.
+                item.image_filename = filename
+                db.session.commit()
+                flash("תמונת ההזמנה עודכנה.", "success")
+                return redirect(url_for("invite_portal.admin_settings"))
+    return render_template(
+        "invite_portal/settings.html", admin=True, sender=None, form=form, settings=item
+    )
 
 
 @invite_portal_bp.get("/image")
 def image():
     item = settings()
     if not item.image_filename:
-        abort(404)
+        abort(404, description="עדיין לא הועלתה תמונת הזמנה.")
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], item.image_filename)
 
 
-@invite_portal_bp.get("/admin/export.xlsx")
-def export_excel():
-    require_admin()
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "מוזמנים"
-    sheet.append(HEADERS)
-    for cell in sheet[1]:
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="805D66")
-    for guest in db.session.scalars(
-        db.select(InvitationPortalGuest).order_by(InvitationPortalGuest.id)
+def send_actor(token=None):
+    if token is not None:
+        sender = sender_for_token(token)
+        return sender, None
+    return None, require_admin().id
+
+
+def prepare(guest_id, token=None):
+    actor_sender, actor_admin = send_actor(token)
+    guest = guest_or_404(guest_id, actor_sender)
+    if not whatsapp_phone(guest.phone):
+        abort(400, description="יש להוסיף מספר טלפון תקין דרך עריכת המוזמן.")
+    item = settings()
+    if (
+        not item.image_filename
+        or not (Path(current_app.config["UPLOAD_FOLDER"]) / item.image_filename).is_file()
     ):
-        sheet.append(
-            [
-                guest.external_id,
-                guest.first_name,
-                guest.last_name or "",
-                guest.phone or "",
-                SIDE_LABELS[guest.side],
-                SALUTATION_LABELS[guest.salutation],
-                guest.group_name or "",
-                STATUS_LABELS[guest.status],
-                guest.last_sender.name if guest.last_sender else "",
-                guest.sent_at.strftime("%d/%m/%Y %H:%M") if guest.sent_at else "",
-                guest.attempts,
-                guest.notes or "",
-            ]
+        abort(400, description="יש להעלות תמונת הזמנה בעמוד ההגדרות לפני השליחה.")
+    sender = actor_sender
+    if actor_admin and request.form.get("sender_id"):
+        sender = db.session.get(InvitationSender, request.form.get("sender_id", type=int))
+        if not sender or not sender.is_active or sender.side != guest.side:
+            abort(400, description="בחרו שולח פעיל מהצד של המוזמן.")
+    pending = db.session.scalar(
+        db.select(InvitationSendAttempt).where(
+            InvitationSendAttempt.guest_id == guest.id, InvitationSendAttempt.state == "pending"
         )
-    for column in sheet.columns:
-        sheet.column_dimensions[column[0].column_letter].width = min(
-            max(len(str(c.value or "")) for c in column) + 2, 32
-        )
-    data = BytesIO()
-    workbook.save(data)
-    data.seek(0)
-    return send_file(
-        data,
-        as_attachment=True,
-        download_name="invitation-manager-guests.xlsx",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-
-
-def rows_from_upload(upload):
-    if (upload.filename or "").lower().endswith(".xlsx"):
-        workbook = load_workbook(upload, read_only=True, data_only=True)
-        sheet = workbook["מוזמנים"] if "מוזמנים" in workbook.sheetnames else workbook.active
-        values = sheet.iter_rows(values_only=True)
-        headers = next(values, ())
-        return [dict(zip(headers, row, strict=False)) for row in values]
-    raw = upload.stream.read().decode("utf-8-sig", errors="replace")
-    return list(csv.DictReader(StringIO(raw)))
-
-
-@invite_portal_bp.post("/admin/import")
-def import_excel():
-    require_admin()
-    upload = request.files.get("file")
-    if not upload or not upload.filename or not upload.filename.lower().endswith((".xlsx", ".csv")):
-        flash("יש לבחור קובץ Excel או CSV.", "error")
-        return redirect(url_for("invite_portal.admin_index"))
-    created = updated = skipped = 0
-    for row in rows_from_upload(upload):
-        external_id = str(row.get("מזהה") or "").strip()
-        guest = (
-            db.session.scalar(
-                db.select(InvitationPortalGuest).where(
-                    InvitationPortalGuest.external_id == external_id
-                )
+    if pending:
+        if pending.admin_user_id != actor_admin or (
+            actor_admin is None and pending.sender_id != actor_sender.id
+        ):
+            abort(409, description="המוזמן כבר בטיפול אצל שולח אחר. רעננו או עדכנו את הסטטוס.")
+        attempt = pending
+    else:
+        # Compare-and-swap prevents two requests from starting different sends concurrently.
+        result = db.session.execute(
+            update(InvitationPortalGuest)
+            .where(
+                InvitationPortalGuest.id == guest.id,
+                InvitationPortalGuest.updated_at == guest.updated_at,
             )
-            if external_id
-            else None
+            .values(status="preparing", updated_at=now()),
+            execution_options={"synchronize_session": False},
         )
-        first_name = str(row.get("שם פרטי") or "").strip()
-        if not first_name:
-            skipped += 1
-            continue
-        guest = guest or InvitationPortalGuest(side="groom", salutation="male")
-        guest.first_name = first_name[:120]
-        guest.last_name = str(row.get("שם משפחה") or "").strip()[:120] or None
-        guest.phone = clean_phone(str(row.get("טלפון") or ""))
-        guest.side = SIDE_VALUES.get(str(row.get("צד") or "").strip(), "groom")
-        guest.salutation = SALUTATION_VALUES.get(str(row.get("צורת פנייה") or "").strip(), "male")
-        guest.group_name = str(row.get("קבוצה") or "").strip()[:120] or None
-        guest.status = STATUS_VALUES.get(str(row.get("סטטוס") or "").strip(), "unsent")
-        guest.notes = str(row.get("הערה") or "").strip() or None
-        db.session.add(guest)
-        if guest.id:
-            updated += 1
-        else:
-            created += 1
-    db.session.commit()
-    flash(f"הייבוא הסתיים: {created} נוספו, {updated} עודכנו, {skipped} דולגו.", "success")
-    return redirect(url_for("invite_portal.admin_index"))
-
-
-@invite_portal_bp.get("/u/<token>")
-def user_index(token: str):
-    sender = sender_for_token(token)
-    guests = visible_guests(sender)
-    all_guests = db.session.scalars(
-        db.select(InvitationPortalGuest).where(InvitationPortalGuest.side == sender.side)
-    ).all()
-    stats = {key: sum(g.status == key for g in all_guests) for key in STATUS_LABELS}
-    return render_template(
-        "invite_portal/dashboard.html",
-        admin=False,
-        sender=sender,
-        guests=guests,
-        stats=stats,
-        settings=settings(),
-        labels=(SIDE_LABELS, SALUTATION_LABELS, STATUS_LABELS),
-    )
-
-
-@invite_portal_bp.route("/u/<token>/guest/new", methods=["GET", "POST"])
-@invite_portal_bp.route("/u/<token>/guest/<int:guest_id>/edit", methods=["GET", "POST"])
-def user_guest_form(token: str, guest_id: int | None = None):
-    sender = sender_for_token(token)
-    guest = (
-        guest_or_404(guest_id, sender)
-        if guest_id
-        else InvitationPortalGuest(side=sender.side, salutation="male")
-    )
-    form = PortalGuestForm(obj=guest)
-    form.side.data = sender.side
-    if form.validate_on_submit():
-        form.populate_obj(guest)
-        guest.side = sender.side
-        guest.phone = clean_phone(form.phone.data)
-        db.session.add(guest)
+        if result.rowcount != 1:
+            db.session.rollback()
+            abort(409, description="הרשומה השתנתה. רעננו ונסו שוב.")
+        attempt = InvitationSendAttempt(
+            guest_id=guest.id,
+            sender_id=sender.id if sender else None,
+            admin_user_id=actor_admin,
+            prior_status=(
+                guest.status
+                if guest.status != "preparing"
+                else ("sent" if guest.sent_at else "unsent")
+            ),
+            message=readable_message(sender, guest),
+        )
+        db.session.add(attempt)
+        activity(guest, sender, "preparing")
         db.session.commit()
-        flash("המוזמן נשמר.", "success")
-        return redirect(url_for("invite_portal.user_index", token=token))
-    return render_template(
-        "invite_portal/guest_form.html", form=form, admin=False, sender=sender, guest=guest
+    return jsonify(
+        ok=True,
+        attempt=attempt.id,
+        text=attempt.message,
+        name=guest.full_name,
+        phone=guest.phone,
+        whatsapp_phone=whatsapp_phone(guest.phone),
+        image_url=url_for("invite_portal.image"),
+        resumed=pending is not None,
+        sender_name=attempt.sender.name if attempt.sender else "מנהל",
     )
+
+
+def confirm(guest_id, token=None):
+    actor_sender, actor_admin = send_actor(token)
+    guest = guest_or_404(guest_id, actor_sender)
+    decision = request.form.get("sent")
+    if decision not in {"true", "false"}:
+        abort(400, description="יש לבחור נשלח או ביטול.")
+    attempt = db.session.get(InvitationSendAttempt, request.form.get("attempt", ""))
+    if not attempt or attempt.guest_id != guest.id:
+        abort(400, description="לא נמצא ניסיון שליחה. פתחו מחדש את ההזמנה.")
+    if attempt.admin_user_id != actor_admin or (
+        actor_admin is None and attempt.sender_id != actor_sender.id
+    ):
+        abort(403, description="רק מי שהתחיל את השליחה יכול לאשר אותה.")
+    target = "confirmed" if decision == "true" else "cancelled"
+    if attempt.state == target:
+        return jsonify(ok=True)  # Retrying the same confirmation never counts twice.
+    result = db.session.execute(
+        update(InvitationSendAttempt)
+        .where(
+            InvitationSendAttempt.id == attempt.id,
+            InvitationSendAttempt.state == "pending",
+        )
+        .values(state=target)
+    )
+    if result.rowcount != 1:
+        db.session.rollback()
+        abort(409, description="ניסיון השליחה כבר נסגר. רעננו את הרשימה.")
+    if decision == "true":
+        guest.status = "sent"
+        guest.sent_at = now()
+        guest.last_sender_id = attempt.sender_id
+        guest.attempts += 1
+    else:
+        guest.status = attempt.prior_status
+    activity(guest, attempt.sender, "sent" if decision == "true" else "cancelled")
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/prepare")
+@limiter.limit("120 per hour")
+def admin_prepare_send(guest_id):
+    return prepare(guest_id)
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/confirm")
+def admin_confirm_send(guest_id):
+    return confirm(guest_id)
 
 
 @invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/prepare")
 @limiter.limit("120 per hour")
-def prepare_send(token: str, guest_id: int):
-    sender = sender_for_token(token)
-    guest = guest_or_404(guest_id, sender)
-    if not guest.phone:
-        return jsonify({"ok": False, "error": "חסר מספר טלפון למוזמן."}), 400
-    guest.status = "preparing"
-    activity(guest, sender, "preparing")
-    db.session.commit()
-    return jsonify(
-        {
-            "ok": True,
-            "text": readable_message(sender, guest),
-            "image_url": url_for("invite_portal.image") if settings().image_filename else None,
-        }
-    )
+def prepare_send(token, guest_id):
+    return prepare(guest_id, token)
 
 
 @invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/confirm")
-@limiter.limit("120 per hour")
-def confirm_send(token: str, guest_id: int):
-    sender = sender_for_token(token)
-    guest = guest_or_404(guest_id, sender)
-    if request.form.get("sent") == "true":
-        guest.status = "sent"
-        guest.sent_at = now()
-        guest.last_sender_id = sender.id
-        guest.attempts += 1
-        activity(guest, sender, "sent")
-    else:
-        guest.status = "unsent"
-        activity(guest, sender, "cancelled")
-    db.session.commit()
-    return jsonify({"ok": True})
+def confirm_send(token, guest_id):
+    return confirm(guest_id, token)
 
 
-@invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/status")
-def user_guest_status(token: str, guest_id: int):
-    sender = sender_for_token(token)
-    guest = guest_or_404(guest_id, sender)
-    status = request.form.get("status")
-    if status not in STATUS_LABELS:
-        abort(400)
-    guest.status = status
-    if status != "sent":
-        guest.sent_at = None
-    activity(guest, sender, f"status_{status}")
-    db.session.commit()
-    return redirect(url_for("invite_portal.user_index", token=token))
+# Register Excel handlers after the shared authorization helpers are defined.
+from . import excel  # noqa: E402,F401

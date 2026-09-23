@@ -10,6 +10,7 @@ from .invitation_portal import (
     InvitationPortalActivity,
     InvitationPortalGuest,
     InvitationPortalSettings,
+    InvitationSendAttempt,
     InvitationSender,
 )
 from .seating import SeatingAssignment, SeatingTable
@@ -33,6 +34,7 @@ __all__ = [
     "InvitationPortalGuest",
     "InvitationPortalSettings",
     "InvitationSender",
+    "InvitationSendAttempt",
     "MusicRequest",
     "SeatingAssignment",
     "SeatingTable",
