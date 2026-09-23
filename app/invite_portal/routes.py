@@ -179,7 +179,7 @@ def admin_login():
             session.permanent = True
             return redirect(url_for("invite_portal.admin_index"))
         form.password.errors.append("פרטי הכניסה אינם נכונים.")
-    return render_template("invite_portal/login.html", form=form)
+    return render_template("invite_portal/login.html", form=form, admin=True, sender=None)
 
 
 @invite_portal_bp.post("/admin/logout")
