@@ -40,7 +40,9 @@ class PortalGuestForm(FlaskForm):
     first_name = StringField("שם פרטי / פנייה", validators=[DataRequired(), Length(max=120)])
     last_name = StringField("שם משפחה", validators=[Optional(), Length(max=120)])
     phone = StringField("טלפון WhatsApp", validators=[Optional(), Length(max=32)])
-    side = SelectField("צד", choices=SIDE_CHOICES, validators=[DataRequired()])
+    side = SelectField(
+        "צד", choices=[("", "בחירת צד…"), *SIDE_CHOICES], validators=[DataRequired()]
+    )
     salutation = SelectField("צורת פנייה", choices=SALUTATION_CHOICES, validators=[DataRequired()])
     invitation_decision = SelectField(
         "החלטת הזמנה",

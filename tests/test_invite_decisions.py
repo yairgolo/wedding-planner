@@ -4,11 +4,14 @@ import pytest
 from openpyxl import load_workbook
 from sqlalchemy import text
 from test_invite_portal import ROOT, finish, prepare, row
+from test_invite_portal import admin as admin_fixture
+from test_invite_portal import portal as portal_fixture
 
 from app.extensions import db
 from app.models import InvitationPortalGuest
 
-pytest_plugins = ["test_invite_portal"]
+admin = admin_fixture
+portal = portal_fixture
 
 
 @pytest.mark.parametrize("prefix", ["/admin", "/u/groom-token"])

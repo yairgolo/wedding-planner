@@ -71,8 +71,8 @@ def export(sender=None):
                 guest.first_name,
                 guest.last_name or "",
                 guest.phone or "",
-                SIDE_LABELS[guest.side],
-                SALUTATION_LABELS[guest.salutation],
+                SIDE_LABELS.get(guest.side, ""),
+                SALUTATION_LABELS.get(guest.salutation, ""),
                 guest.group_name or "",
                 STATUS_LABELS[guest.status],
                 guest.last_sender.name if guest.last_sender else "",
@@ -96,7 +96,9 @@ def export(sender=None):
     ):
         sheet.column_dimensions[letter].width = width
     for col, labels in (("E", SIDE_LABELS), ("F", SALUTATION_LABELS), ("H", STATUS_LABELS)):
-        validation = DataValidation(type="list", formula1='"' + ",".join(labels.values()) + '"')
+        validation = DataValidation(
+            type="list", formula1='"' + ",".join(labels.values()) + '"', allow_blank=True
+        )
         validation.errorTitle = "יש לבחור ערך מהרשימה"
         validation.error = "בחרו אחת מהאפשרויות המוצעות."
         validation.showErrorMessage = True
@@ -107,7 +109,9 @@ def export(sender=None):
     guide = workbook.create_sheet("הנחיות")
     for index, label in enumerate(DECISION_LABELS.values(), 1):
         guide.cell(index, 3, label)
-    decision_validation = DataValidation(type="list", formula1="'הנחיות'!$C$1:$C$2")
+    decision_validation = DataValidation(
+        type="list", formula1="'הנחיות'!$C$1:$C$2", allow_blank=True
+    )
     decision_validation.showErrorMessage = True
     sheet.add_data_validation(decision_validation)
     decision_validation.add("M2:M5001")
@@ -116,7 +120,9 @@ def export(sender=None):
     for text in [
         "רשומות קיימות מעודכנות לפי מזהה בלבד. אין לשנות מזהים.",
         "להוספת מוזמן חדש: הוסיפו שורה והשאירו את המזהה ריק.",
-        "חובה: שם פרטי, צד וצורת פנייה (זכר, נקבה או רבים).",
+        "אפשר לייבא רשומות חלקיות. לפני שליחה חובה להשלים שם פרטי, צד וצורת פנייה.",
+        "בעדכון לפי מזהה, שדות ריקים או עמודות חסרות שומרים את הערכים הקיימים.",
+        "בייבוא אישי צד חסר משויך לצד של השולח; בייבוא מנהל נשאר ללא שיוך.",
         "טלפון יש להזין כטקסט, כולל האפס בתחילת המספר.",
         "תאריך שליחה, השולח ומספר הניסיונות הם מידע בלבד ונשמרים במערכת.",
         "סטטוס ריק משאיר את הסטטוס הקיים. שינוי סטטוס סוגר ניסיון שליחה פתוח.",
@@ -175,12 +181,11 @@ def import_file(sender=None):
     else:
         try:
             headers, rows = read_rows(upload)
-            if not {"שם פרטי", "צד", "צורת פנייה"}.issubset(headers):
-                raise ValueError("חסרות עמודות חובה: שם פרטי, צד וצורת פנייה.")
+            if not set(HEADERS).intersection(headers):
+                raise ValueError("לא נמצאו עמודות מוכרות.")
             for number, row in enumerate(rows, 2):
                 if not any(value is not None and str(value).strip() for value in row.values()):
                     continue
-                first = str(row.get("שם פרטי") or "").strip()
                 identifier = str(row.get("מזהה") or "").strip()
                 guest = (
                     db.session.scalar(
@@ -191,8 +196,24 @@ def import_file(sender=None):
                     if identifier
                     else None
                 )
-                side = enum_value(row.get("צד"), SIDE_LABELS)
-                salutation = enum_value(row.get("צורת פנייה"), SALUTATION_LABELS)
+
+                def field(header, attribute, default="", row=row, guest=guest):
+                    raw = str(row.get(header) or "").strip()
+                    return raw or (getattr(guest, attribute) or "" if guest else default)
+
+                first = field("שם פרטי", "first_name")
+                side_raw = str(row.get("צד") or "").strip()
+                salutation_raw = str(row.get("צורת פנייה") or "").strip()
+                side = (
+                    enum_value(side_raw, SIDE_LABELS)
+                    if side_raw
+                    else field("צד", "side", sender.side if sender else "")
+                )
+                salutation = (
+                    enum_value(salutation_raw, SALUTATION_LABELS)
+                    if salutation_raw
+                    else field("צורת פנייה", "salutation")
+                )
                 status_raw = str(row.get("סטטוס") or "").strip()
                 status = (
                     enum_value(status_raw, STATUS_LABELS)
@@ -212,16 +233,16 @@ def import_file(sender=None):
                     error = "אפשר לייבא ולעדכן רק מוזמנים מהצד שלך."
                 elif guest and guest.deleted_at:
                     error = "המוזמן נמחק. יש לשחזר אותו באתר לפני עדכון דרך Excel."
-                elif not first or len(first) > 120:
-                    error = "חסר שם פרטי או שהשם ארוך מדי."
-                elif not side or not salutation or not status or not decision:
+                elif len(first) > 120:
+                    error = "השם הפרטי ארוך מדי."
+                elif side is None or salutation is None or not status or not decision:
                     error = "יש לבחור צד, צורת פנייה, סטטוס והחלטת הזמנה תקינים."
                 elif (
-                    decision == "undecided"
+                    (decision == "undecided" or not salutation or not first or not side)
                     and status in {"preparing", "sent"}
                     and (not guest or status != guest.status)
                 ):
-                    error = "מוזמן בסימן שאלה אינו יכול לעבור לבטיפול או לנשלח."
+                    error = "מוזמן בסימן שאלה או עם פרטים חסרים אינו יכול לעבור לבטיפול או לנשלח."
                 if error:
                     errors.append(f"שורה {number}: {error}")
                     continue
@@ -231,14 +252,14 @@ def import_file(sender=None):
                         guest,
                         dict(
                             first_name=first,
-                            last_name=str(row.get("שם משפחה") or "").strip()[:120],
-                            phone=clean_phone(row.get("טלפון")),
+                            last_name=field("שם משפחה", "last_name")[:120],
+                            phone=clean_phone(field("טלפון", "phone")),
                             side=side,
                             salutation=salutation,
-                            group_name=str(row.get("קבוצה") or "").strip()[:120],
+                            group_name=field("קבוצה", "group_name")[:120],
                             status=status,
                             invitation_decision=decision,
-                            notes=str(row.get("הערה") or "").strip(),
+                            notes=field("הערה", "notes"),
                         ),
                     )
                 )
@@ -262,7 +283,9 @@ def import_file(sender=None):
     for guest, values in changes:
         if guest:
             updated += 1
-            if values["invitation_decision"] == "undecided":
+            if values["invitation_decision"] == "undecided" or not all(
+                values[key] for key in ("first_name", "side", "salutation")
+            ):
                 close_pending(guest)
                 if values["status"] == "preparing":
                     values["status"] = guest.status

@@ -22,7 +22,7 @@
   <div class="button-row list-links"><a class="text-link" href="{{ home_url }}?invitation_decision=undecided">? בסימן שאלה ({{ undecided_count }})</a><a class="text-link" href="{{ url_for('invite_portal.admin_trash') if admin else url_for('invite_portal.user_trash', token=sender.access_token) }}">מוזמנים שנמחקו</a></div>
   <div class="section-heading"><div><p class="eyebrow">האנשים שלכם</p><h2>רשימת המוזמנים <span class="count">{{ guests|length }}</span></h2></div>
     <details class="excel-tools"><summary>ייבוא / ייצוא Excel</summary><div class="excel-content">
-      <p>עדכון רשומות לפי מזהה. למוזמן חדש משאירים את המזהה ריק.</p>
+      <p>עדכון רשומות לפי מזהה. למוזמן חדש משאירים את המזהה ריק. אפשר לייבא פרטים חלקיים; יש להשלים שם פרטי, צד וצורת פנייה לפני שליחה. בעדכון, שדות ריקים שומרים את המידע הקיים.</p>
       <a class="button" href="{{ url_for('invite_portal.export_excel') if admin else url_for('invite_portal.user_export_excel', token=sender.access_token) }}">הורדת הרשימה / תבנית</a>
       <form method="post" enctype="multipart/form-data" action="{{ url_for('invite_portal.import_excel') if admin else url_for('invite_portal.user_import_excel', token=sender.access_token) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -41,13 +41,15 @@
   <div class="guest-list">
   {% for guest in guests %}
     <article class="guest" data-guest-row="{{ guest.id }}" data-side="{{ guest.side }}">
-      <div class="guest-info"><span class="initial" aria-hidden="true">{{ guest.first_name[:1] }}</span><div><h3>{{ guest.full_name }}</h3><p><bdi>{{ guest.phone or 'ללא טלפון' }}</bdi><span class="dot-separator">·</span>{{ salutation_labels[guest.salutation] }}{% if admin %} · צד {{ side_labels[guest.side] }}{% endif %}{% if guest.group_name %} · {{ guest.group_name }}{% endif %}</p></div></div>
+      {% set incomplete = not guest.first_name or guest.salutation not in salutation_labels or guest.side not in side_labels %}
+      <div class="guest-info"><span class="initial" aria-hidden="true">{{ guest.first_name[:1] or '?' }}</span><div><h3>{{ guest.full_name or 'מוזמן ללא שם' }}</h3><p><bdi>{{ guest.phone or 'ללא טלפון' }}</bdi><span class="dot-separator">·</span>{{ salutation_labels.get(guest.salutation, 'חסרה צורת פנייה') }}{% if admin %} · {{ side_labels.get(guest.side, 'ללא שיוך לצד') }}{% endif %}{% if guest.group_name %} · {{ guest.group_name }}{% endif %}</p></div></div>
       <span class="status {{ guest.status }}">{{ status_labels[guest.status] }}</span>
       <div class="guest-actions">
-        <button class="button primary send-button" type="button" data-guest="{{ guest.id }}" {% if guest.invitation_decision == 'undecided' %}disabled aria-describedby="decision-{{ guest.id }}"{% endif %}>{% if guest.status == 'preparing' %}המשך טיפול{% elif guest.status == 'sent' %}שליחה נוספת{% else %}שליחת הזמנה{% endif %}<span aria-hidden="true">↗</span></button>
+        <button class="button primary send-button" type="button" data-guest="{{ guest.id }}" {% if incomplete or guest.invitation_decision == 'undecided' %}disabled aria-describedby="{{ 'incomplete-' if incomplete else 'decision-' }}{{ guest.id }}"{% endif %}>{% if guest.status == 'preparing' %}המשך טיפול{% elif guest.status == 'sent' %}שליחה נוספת{% else %}שליחת הזמנה{% endif %}<span aria-hidden="true">↗</span></button>
         <a class="button subtle" href="{{ url_for('invite_portal.admin_guest_form', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_form', token=sender.access_token, guest_id=guest.id) }}">עריכה</a>
       </div>
       <div class="decision-controls">
+        {% if incomplete %}<p class="decision-note" id="incomplete-{{ guest.id }}">השליחה חסומה: יש להשלים בעריכה {% if not guest.first_name %}שם פרטי; {% endif %}{% if guest.salutation not in salutation_labels %}צורת פנייה; {% endif %}{% if guest.side not in side_labels %}שיוך לצד;{% endif %}</p>{% endif %}
         {% if guest.invitation_decision == 'undecided' %}<p class="decision-note" id="decision-{{ guest.id }}">? בסימן שאלה — השליחה חסומה עד לבחירה ב״כן, מזמינים״.</p>{% endif %}
         <form method="post" action="{{ url_for('invite_portal.admin_guest_decision', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_decision', token=sender.access_token, guest_id=guest.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="invitation_decision" value="{{ 'invited' if guest.invitation_decision == 'undecided' else 'undecided' }}">
@@ -57,7 +59,7 @@
       <details class="guest-details"><summary>סטטוס ופרטים נוספים</summary><div>
         {% if guest.sent_at %}<p>סומן כנשלח ב־{{ guest.sent_at.strftime('%d/%m/%Y %H:%M') }} (UTC){% if guest.last_sender %} · {{ guest.last_sender.name }}{% endif %} · {{ guest.attempts }} שליחות שאושרו</p>{% endif %}
         {% if guest.notes %}<p>{{ guest.notes }}</p>{% endif %}
-        {% if guest.invitation_decision == 'invited' %}<form method="post" action="{{ url_for('invite_portal.admin_guest_status', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_status', token=sender.access_token, guest_id=guest.id) }}">
+        {% if guest.invitation_decision == 'invited' and not incomplete %}<form method="post" action="{{ url_for('invite_portal.admin_guest_status', guest_id=guest.id) if admin else url_for('invite_portal.user_guest_status', token=sender.access_token, guest_id=guest.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label for="status-{{ guest.id }}">שינוי סטטוס ידני</label>
           <select id="status-{{ guest.id }}" name="status">{% for key,label in status_labels.items() %}<option value="{{ key }}" {% if guest.status==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="button">שמירת סטטוס</button>

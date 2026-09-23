@@ -151,7 +151,7 @@ def test_admin_writes_protected(client, portal, path):
 def test_sender_scope_and_revocation(admin, portal):
     response = admin.get(ROOT + "/u/groom-token")
     assert "משה".encode() in response.data
-    assert "מרים".encode() not in response.data
+    assert 'data-guest-row="2"' not in response.text
     assert prepare(admin, 2).status_code == 404
     assert admin.get(ROOT + "/u/groom-token/guest/2/edit").status_code == 404
     assert (
@@ -422,7 +422,7 @@ def test_excel_roundtrip_preserves_ids_history_and_phone(admin, portal):
 
 
 @pytest.mark.parametrize("side,gender", [("חתן", "זכר"), ("bride", "female"), ("groom", "plural")])
-def test_import_new_requires_explicit_side_and_gender(admin, portal, side, gender):
+def test_import_new_respects_explicit_side_and_gender(admin, portal, side, gender):
     data = workbook_file([["", "new", "", "0501234567", side, gender, ""]])
     assert (
         admin.post(ROOT + "/admin/import", data={"file": (data, "guests.xlsx")}).status_code == 302
@@ -439,7 +439,7 @@ def test_import_new_requires_explicit_side_and_gender(admin, portal, side, gende
     "bad_row",
     [
         ["missing-id", "new", "", "", "חתן", "זכר", ""],
-        ["", "new", "", "", "חתן", "", ""],
+        ["", "new", "", "", "חתן", "unknown", ""],
         ["", "new", "", "", "unknown", "זכר", ""],
         ["", "new", "", "", "חתן", "זכר", "wrong"],
     ],
@@ -450,6 +450,87 @@ def test_bad_import_is_atomic(admin, portal, bad_row):
     assert response.status_code == 400
     with portal.app_context():
         assert db.session.scalar(db.select(db.func.count(InvitationPortalGuest.id))) == 3
+
+
+@pytest.mark.parametrize("prefix", ["/admin", "/u/groom-token"])
+@pytest.mark.parametrize("file_type", ["csv", "xlsx"])
+def test_partial_import_blocks_send_until_completed(admin, portal, prefix, file_type):
+    if file_type == "csv":
+        data = BytesIO("שם פרטי\nחדש חלקי\n".encode("utf-8-sig"))
+    else:
+        book = Workbook()
+        book.active.append(["שם פרטי"])
+        book.active.append(["חדש חלקי"])
+        data = BytesIO()
+        book.save(data)
+        data.seek(0)
+    response = admin.post(ROOT + prefix + "/import", data={"file": (data, "partial." + file_type)})
+    assert response.status_code == 302
+    with portal.app_context():
+        guest = db.session.scalar(
+            db.select(InvitationPortalGuest).where(InvitationPortalGuest.first_name == "חדש חלקי")
+        )
+        guest_id = guest.id
+        assert guest.salutation == ""
+        assert guest.side == ("" if prefix == "/admin" else "groom")
+    assert prepare(admin, guest_id=guest_id, prefix=prefix).status_code == 409
+    assert "חסרה צורת פנייה" in admin.get(ROOT + prefix).text
+    assert admin.get(ROOT + prefix + "/export.xlsx").status_code == 200
+    if prefix == "/admin":
+        assert "חדש חלקי" not in admin.get(ROOT + "/u/groom-token").text
+    response = admin.post(
+        f"{ROOT}{prefix}/guest/{guest_id}/edit",
+        data={
+            "first_name": "חדש חלקי",
+            "side": "groom",
+            "salutation": "plural",
+        },
+    )
+    assert response.status_code == 302
+    assert prepare(admin, guest_id=guest_id, prefix=prefix).status_code == 200
+
+
+def test_partial_update_preserves_existing_values(admin, portal):
+    with portal.app_context():
+        identifier = db.session.get(InvitationPortalGuest, 1).external_id
+    data = BytesIO(f"מזהה,שם פרטי,צורת פנייה\n{identifier},מעודכן,\n".encode("utf-8-sig"))
+    assert (
+        admin.post(ROOT + "/admin/import", data={"file": (data, "partial.csv")}).status_code == 302
+    )
+    with portal.app_context():
+        guest = db.session.get(InvitationPortalGuest, 1)
+        assert guest.first_name == "מעודכן"
+        assert (guest.salutation, guest.side, guest.phone, guest.last_name) == (
+            "male",
+            "groom",
+            "0501234567",
+            "לוי",
+        )
+
+
+def test_import_phone_only_and_blank_rows(admin, portal):
+    data = BytesIO("טלפון\n0509999999\n\n".encode("utf-8-sig"))
+    assert (
+        admin.post(ROOT + "/admin/import", data={"file": (data, "partial.csv")}).status_code == 302
+    )
+    with portal.app_context():
+        guest = db.session.scalar(
+            db.select(InvitationPortalGuest).where(InvitationPortalGuest.phone == "0509999999")
+        )
+        guest_id = guest.id
+        assert guest.first_name == ""
+        assert db.session.scalar(db.select(db.func.count(InvitationPortalGuest.id))) == 4
+    assert prepare(admin, guest_id=guest_id, prefix="/admin").status_code == 409
+
+
+@pytest.mark.parametrize("prefix", ["/admin", "/u/groom-token"])
+def test_missing_salutation_blocks_pending_confirmation_and_manual_sent(admin, portal, prefix):
+    attempt = prepare(admin, prefix=prefix).json["attempt"]
+    with portal.app_context():
+        db.session.get(InvitationPortalGuest, 1).salutation = ""
+        db.session.commit()
+    assert finish(admin, attempt, prefix=prefix).status_code == 409
+    assert admin.post(ROOT + prefix + "/guest/1/status", data={"status": "sent"}).status_code == 409
 
 
 def test_sender_excel_is_scoped_and_rejects_other_side(client, portal):

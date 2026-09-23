@@ -180,6 +180,22 @@ async function run() {
   await page.waitForLoadState("networkidle");
   assert(await pair().locator(".send-button").isEnabled());
   passed("Mobile delete requires confirmation and supports restoring guest");
+  await page.locator(".excel-tools summary").click();
+  await page.locator("#excelFile").setInputFiles({
+    name: "partial.csv", mimeType: "text/csv",
+    buffer: Buffer.from("שם פרטי\nייבוא חלקי\n", "utf8")
+  });
+  await page.getByRole("button", { name: "ייבוא קובץ", exact: true }).click();
+  await page.waitForLoadState("networkidle");
+  const partial = () => page.locator(".guest").filter({ hasText: "ייבוא חלקי" }).last();
+  assert(await partial().locator(".send-button").isDisabled());
+  assert((await partial().textContent()).includes("חסרה צורת פנייה"));
+  await partial().getByRole("link", { name: "עריכה", exact: true }).click();
+  await page.getByLabel("צורת פנייה", { exact: true }).selectOption("male");
+  await page.getByRole("button", { name: "שמירת מוזמן", exact: true }).click();
+  await page.waitForLoadState("networkidle");
+  assert(await partial().locator(".send-button").isEnabled());
+  passed("Partial CSV import blocks sending until salutation is completed on mobile");
   assert.deepEqual(errors, []);
   passed("No uncaught browser JavaScript errors");
   console.log(JSON.stringify({ checks, artifacts }));

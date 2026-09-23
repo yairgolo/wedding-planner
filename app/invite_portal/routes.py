@@ -322,6 +322,10 @@ def invalidate_attempts(guest_id):
 
 
 def require_invited(guest):
+    if guest.salutation not in SALUTATION_LABELS:
+        abort(409, description="יש לבחור צורת פנייה בעריכת המוזמן לפני שליחת הזמנה.")
+    if not guest.first_name or guest.side not in SIDE_LABELS:
+        abort(409, description="יש להשלים שם פרטי וצד בעריכת המוזמן לפני שליחת הזמנה.")
     if guest.invitation_decision != "invited":
         abort(409, description="המוזמן בסימן שאלה. יש לשנות ל׳כן, מזמינים׳ לפני השליחה.")
 
