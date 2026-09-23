@@ -51,6 +51,18 @@ async function run() {
   await page.getByRole("button", { name: "העתקת קישור" }).first().click();
   await page.getByRole("status").filter({ hasText: "הועתק" }).waitFor({ state: "visible" });
   passed("Existing senders page and copy personal link");
+  const senderCard = page.locator(".sender-card").filter({ hasText: "אבא של החתן" });
+  await senderCard.getByRole("link", { name: "עריכת נוסח ופרטים" }).click();
+  assert(await page.getByRole("heading", { name: "עריכת הנוסח של אבא של החתן" }).isVisible());
+  assert.equal(await page.locator(".sender-card").count(), 0);
+  await page.getByLabel("נוסח לזכר", { exact: true }).fill("{name} היקר, נשמח לחגוג יחד בחתונת בננו.");
+  await page.getByLabel("נוסח לנקבה", { exact: true }).fill("{name} היקרה, נשמח לחגוג יחד בחתונת בננו.");
+  await page.getByLabel("נוסח לרבים", { exact: true }).fill("{name} היקרים, נשמח לחגוג יחד בחתונת בננו.");
+  await page.getByRole("button", { name: "שמירת הנוסחים והפרטים" }).click();
+  await page.waitForURL(base + "/admin/senders");
+  await page.locator(".sender-card").filter({ hasText: "אבא של החתן" }).getByRole("link", { name: "עריכת נוסח ופרטים" }).click();
+  assert.equal(await page.getByLabel("נוסח לזכר", { exact: true }).inputValue(), "{name} היקר, נשמח לחגוג יחד בחתונת בננו.");
+  passed("Admin edits and persists all three templates in dedicated sender form");
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await page.goto(base + "/admin/settings");
   assert(await page.getByAltText("תמונת ההזמנה הנוכחית").isVisible());

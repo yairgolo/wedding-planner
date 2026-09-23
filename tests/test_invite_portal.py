@@ -343,6 +343,37 @@ def test_sender_crud_and_existing_list_render(admin):
     assert b"data-copy-target" in response.data
 
 
+def test_admin_edits_each_senders_templates_without_changing_other_senders(admin, portal):
+    for sender_id in [1, 2]:
+        response = admin.get(ROOT + f"/admin/senders/{sender_id}")
+        assert response.status_code == 200
+        assert b'class="sender-list"' not in response.data
+        assert "שמירת הנוסחים והפרטים".encode() in response.data
+        with portal.app_context():
+            sender = db.session.get(InvitationSender, sender_id)
+            data = {
+                "name": sender.name,
+                "role": sender.role,
+                "side": sender.side,
+                "is_active": "y",
+                "male_template": f"{{name}} זכר {sender_id}",
+                "female_template": f"{{name}} נקבה {sender_id}",
+                "plural_template": f"{{name}} רבים {sender_id}",
+            }
+            token = sender.access_token
+        saved = admin.post(ROOT + f"/admin/senders/{sender_id}", data=data, follow_redirects=True)
+        assert saved.status_code == 200
+        with portal.app_context():
+            sender = db.session.get(InvitationSender, sender_id)
+            for field in ["male_template", "female_template", "plural_template"]:
+                assert getattr(sender, field) == data[field]
+            assert sender.access_token == token
+            assert db.session.get(InvitationSender, 3).male_template == "{name} היקר"
+            assert db.session.scalar(db.select(db.func.count(InvitationSender.id))) == 3
+    assert prepare(admin).json["text"] == "משה זכר 1"
+    assert prepare(admin, guest_id=2, prefix="/u/bride-token").json["text"] == "מרים נקבה 2"
+
+
 @pytest.mark.parametrize(
     "query,included,excluded",
     [

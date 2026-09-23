@@ -1,20 +1,25 @@
 {% extends "invite_portal/base.html" %}
 {% from "invite_portal/macros.html" import errors %}
 {% block content %}
-<div class="page-heading"><p class="eyebrow">ביחד, כל אחד בדרך שלו</p><h1>האנשים ששולחים שמחה</h1><p>קישור אישי, צד משויך ושלושה נוסחים לכל בן משפחה.</p></div>
+{% if editing %}
+<a class="back-link" href="{{ url_for('invite_portal.admin_senders') }}">→ חזרה לכל השולחים</a>
+<div class="page-heading"><p class="eyebrow">הנוסח האישי של השולח</p><h1>עריכת הנוסח של {{ editing_sender.name }}</h1><p>שינוי שלושת הנוסחים כאן חל רק על {{ editing_sender.name }}. השינויים יופיעו בהזמנות חדשות שייפתחו לאחר השמירה.</p></div>
+{% else %}
+<div class="page-heading"><p class="eyebrow">ביחד, כל אחד בדרך שלו</p><h1>האנשים ששולחים שמחה</h1><p>לעריכת הטקסט של שולח, לחצו על ״עריכת נוסח ופרטים״ בכרטיס שלו.</p></div>
 <section class="sender-list">{% for person in senders %}
 <article class="sender-card"><div class="section-heading"><div><h2>{{ person.name }}</h2><p>{{ person.role }} · צד {{ side_labels[person.side] }}</p></div><span class="status {{ 'sent' if person.is_active else 'unsent' }}">{{ 'פעיל' if person.is_active else 'מושבת' }}</span></div>
 <label>הקישור האישי<input id="link-{{ person.id }}" readonly dir="ltr" value="{{ url_for('invite_portal.user_index', token=person.access_token, _external=true) }}"></label>
-<div class="button-row"><button class="button primary" type="button" data-copy-target="link-{{ person.id }}">העתקת קישור</button><a class="button" href="{{ url_for('invite_portal.admin_senders', sender_id=person.id) }}">עריכה</a>
+<div class="button-row"><a class="button primary" href="{{ url_for('invite_portal.admin_senders', sender_id=person.id) }}">עריכת נוסח ופרטים</a><button class="button" type="button" data-copy-target="link-{{ person.id }}">העתקת קישור</button>
 <form method="post" action="{{ url_for('invite_portal.renew_sender_link', sender_id=person.id) }}" data-confirm-prompt="להחליף את הקישור? הקישור הקודם יפסיק לעבוד."><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button subtle">החלפת קישור</button></form></div>
 </article>{% else %}<div class="notice">התחילו בהוספת החתן, הכלה או אחד ההורים בטופס למטה.</div>{% endfor %}</section>
-<section class="form-card" id="senderForm"><h2>{{ 'עריכת שולח' if editing else 'הוספת שולח' }}</h2>
-<form method="post" class="fields">{{ form.hidden_tag() }}{{ errors(form) }}
+{% endif %}
+<section class="form-card" id="senderForm"><h2>{{ 'נוסחי ההזמנה ופרטי השולח' if editing else 'הוספת שולח' }}</h2>
+<form method="post" action="{{ url_for('invite_portal.admin_senders', sender_id=editing_sender.id) if editing else url_for('invite_portal.admin_senders') }}" class="fields">{{ form.hidden_tag() }}{{ errors(form) }}
 <label>{{ form.name.label }}{{ form.name(placeholder="השם שיוצג באתר") }}</label>
 <label>{{ form.role.label }}{{ form.role(placeholder="למשל: אמא של הכלה", list="roles") }}<datalist id="roles">{% for role in ['חתן','כלה','אבא של החתן','אמא של החתן','אבא של הכלה','אמא של הכלה'] %}<option value="{{ role }}">{% endfor %}</datalist></label>
 <label>{{ form.side.label }}{{ form.side() }}</label><label class="check">{{ form.is_active() }} {{ form.is_active.label.text }}</label>
 <p class="wide muted">השתמשו ב־{name} במקום שם המוזמן. להורים אפשר לכתוב: ״נשמח להזמינך לחתונת בננו״ או ״לחתונת בתנו״.</p>
 {% for field in [form.male_template,form.female_template,form.plural_template] %}<label class="wide">{{ field.label }}{{ field(rows=5) }}</label>{% endfor %}
-<div class="button-row wide">{{ form.submit(class_="button primary") }}{% if editing %}<a class="button" href="{{ url_for('invite_portal.admin_senders') }}">ביטול</a>{% endif %}</div>
+<div class="button-row wide">{{ form.submit(class_="button primary", value='שמירת הנוסחים והפרטים' if editing else 'הוספת שולח') }}{% if editing %}<a class="button" href="{{ url_for('invite_portal.admin_senders') }}">ביטול</a>{% endif %}</div>
 </form></section>
 {% endblock %}
