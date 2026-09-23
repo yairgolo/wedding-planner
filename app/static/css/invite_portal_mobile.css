@@ -1,0 +1,5 @@
+@media (max-width: 650px) {
+  .portal-header { align-items: flex-start; }
+  .portal-header nav { justify-content: flex-end; gap: 7px; }
+  .portal-header nav a, .portal-header nav button { display: inline-block; font-size: 13px; padding: 7px 5px; }
+}

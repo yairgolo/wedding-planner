@@ -256,7 +256,12 @@ def admin_senders(sender_id: int | None = None):
     sender = (
         db.get_or_404(InvitationSender, sender_id)
         if sender_id
-        else InvitationSender(side="groom", **DEFAULT_TEMPLATES)
+        else InvitationSender(
+            side="groom",
+            male_template=DEFAULT_TEMPLATES["male"],
+            female_template=DEFAULT_TEMPLATES["female"],
+            plural_template=DEFAULT_TEMPLATES["plural"],
+        )
     )
     form = SenderForm(obj=sender)
     if form.validate_on_submit():
