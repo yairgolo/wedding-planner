@@ -42,6 +42,12 @@ class PortalGuestForm(FlaskForm):
     phone = StringField("טלפון WhatsApp", validators=[Optional(), Length(max=32)])
     side = SelectField("צד", choices=SIDE_CHOICES, validators=[DataRequired()])
     salutation = SelectField("צורת פנייה", choices=SALUTATION_CHOICES, validators=[DataRequired()])
+    invitation_decision = SelectField(
+        "החלטת הזמנה",
+        choices=[("invited", "כן, מזמינים"), ("undecided", "בסימן שאלה")],
+        default="invited",
+        validators=[DataRequired()],
+    )
     group_name = StringField("קבוצה", validators=[Optional(), Length(max=120)])
     notes = TextAreaField("הערה", validators=[Optional()])
     submit = SubmitField("שמירת מוזמן")

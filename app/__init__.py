@@ -155,6 +155,18 @@ def register_commands(app: Flask) -> None:
         """Create tables and seed the first administrator and wedding."""
         db.create_all()
         inspector = inspect(db.engine)
+        portal_columns = {
+            column["name"] for column in inspector.get_columns("invitation_portal_guests")
+        }
+        with db.engine.begin() as connection:
+            for name, sql_type in {
+                "invitation_decision": "VARCHAR(20) DEFAULT 'invited' NOT NULL",
+                "deleted_at": "TIMESTAMP",
+            }.items():
+                if name not in portal_columns:
+                    connection.execute(
+                        text(f"ALTER TABLE invitation_portal_guests ADD COLUMN {name} {sql_type}")
+                    )
         if "budget_items" in inspector.get_table_names():
             columns = {column["name"] for column in inspector.get_columns("budget_items")}
             if "vendor_id" not in columns:

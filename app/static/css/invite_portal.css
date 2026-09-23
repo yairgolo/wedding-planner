@@ -86,6 +86,12 @@ label small,small.muted{color:var(--muted);font-size:14px;font-weight:400}
 .guest-details>div{padding:16px;background:#f0f0e9;border-radius:6px}
 .guest-details form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .guest-details select{width:auto}
+.decision-controls{grid-column:1/-1;margin-top:12px}
+.decision-note{padding:10px 14px;background:#fbf2e0;color:#765a2a;border-radius:6px;margin-bottom:10px}
+.send-button:disabled{cursor:not-allowed}
+.list-links{margin-bottom:20px;gap:24px}
+.delete-guest{margin-top:16px}
+.button.danger{color:#963c39;border-color:#d7aaa6}
 .empty{text-align:center;padding:50px 20px;color:var(--muted)}
 .empty>span{font:50px Georgia,serif;color:#aa8576}
 .empty h3{color:var(--ink);margin-top:15px}

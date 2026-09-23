@@ -52,6 +52,7 @@ DEFAULT_TEMPLATES = {
 SIDE_LABELS = {"groom": "חתן", "bride": "כלה"}
 SALUTATION_LABELS = {"male": "זכר", "female": "נקבה", "plural": "רבים"}
 STATUS_LABELS = {"unsent": "טרם נשלח", "preparing": "בטיפול", "sent": "נשלח"}
+DECISION_LABELS = {"invited": "כן, מזמינים", "undecided": "בסימן שאלה"}
 
 
 def now():
@@ -107,10 +108,12 @@ def sender_for_token(token):
     return sender
 
 
-def guest_or_404(guest_id, sender=None):
+def guest_or_404(guest_id, sender=None, include_deleted=False):
     guest = db.get_or_404(InvitationPortalGuest, guest_id)
     if sender and guest.side != sender.side:
         abort(404)
+    if guest.deleted_at and not include_deleted:
+        abort(404, description="המוזמן נמחק. ניתן לשחזר אותו מרשימת המחוקים.")
     return guest
 
 
@@ -157,7 +160,10 @@ def private_response(response):
 @invite_portal_bp.context_processor
 def portal_context():
     return dict(
-        side_labels=SIDE_LABELS, salutation_labels=SALUTATION_LABELS, status_labels=STATUS_LABELS
+        side_labels=SIDE_LABELS,
+        salutation_labels=SALUTATION_LABELS,
+        status_labels=STATUS_LABELS,
+        decision_labels=DECISION_LABELS,
     )
 
 
@@ -196,7 +202,7 @@ def home():
 
 
 def dashboard(sender=None):
-    scope = db.select(InvitationPortalGuest)
+    scope = db.select(InvitationPortalGuest).where(InvitationPortalGuest.deleted_at.is_(None))
     if sender:
         scope = scope.where(InvitationPortalGuest.side == sender.side)
     all_guests = db.session.scalars(scope).all()
@@ -210,7 +216,11 @@ def dashboard(sender=None):
                 InvitationPortalGuest.phone.ilike(like),
             )
         )
-    for field, allowed in (("status", STATUS_LABELS), ("side", SIDE_LABELS)):
+    for field, allowed in (
+        ("status", STATUS_LABELS),
+        ("side", SIDE_LABELS),
+        ("invitation_decision", DECISION_LABELS),
+    ):
         value = request.args.get(field, "")
         if value in allowed:
             scope = scope.where(getattr(InvitationPortalGuest, field) == value)
@@ -223,6 +233,7 @@ def dashboard(sender=None):
         sender=sender,
         guests=db.session.scalars(scope.order_by(InvitationPortalGuest.first_name)).all(),
         stats={key: sum(g.status == key for g in all_guests) for key in STATUS_LABELS},
+        undecided_count=sum(g.invitation_decision == "undecided" for g in all_guests),
         groups=sorted({g.group_name for g in all_guests if g.group_name}),
         settings=settings(),
         senders=db.session.scalars(
@@ -250,7 +261,9 @@ def save_guest_form(guest_id=None, sender=None):
     guest = (
         guest_or_404(guest_id, sender)
         if guest_id
-        else InvitationPortalGuest(side=sender.side if sender else "groom", salutation="")
+        else InvitationPortalGuest(
+            side=sender.side if sender else "groom", salutation="", invitation_decision="invited"
+        )
     )
     form = PortalGuestForm(obj=guest)
     if sender:
@@ -308,10 +321,117 @@ def invalidate_attempts(guest_id):
         )
 
 
+def require_invited(guest):
+    if guest.invitation_decision != "invited":
+        abort(409, description="המוזמן בסימן שאלה. יש לשנות ל׳כן, מזמינים׳ לפני השליחה.")
+
+
+def close_pending(guest):
+    if guest.status == "preparing":
+        pending = db.session.scalar(
+            db.select(InvitationSendAttempt).where(
+                InvitationSendAttempt.guest_id == guest.id,
+                InvitationSendAttempt.state == "pending",
+            )
+        )
+        guest.status = pending.prior_status if pending else ("sent" if guest.sent_at else "unsent")
+    invalidate_attempts(guest.id)
+
+
+def change_decision(guest, sender=None):
+    decision = request.form.get("invitation_decision")
+    if decision not in DECISION_LABELS:
+        abort(400, description="יש לבחור כן, מזמינים או בסימן שאלה.")
+    close_pending(guest)
+    guest.invitation_decision = decision
+    activity(guest, sender, f"decision_{decision}")
+    db.session.commit()
+    flash(f"{guest.full_name}: {DECISION_LABELS[decision]}.", "success")
+    return redirect(index_url(sender))
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/decision")
+def admin_guest_decision(guest_id):
+    require_admin()
+    return change_decision(guest_or_404(guest_id))
+
+
+@invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/decision")
+def user_guest_decision(token, guest_id):
+    sender = sender_for_token(token)
+    return change_decision(guest_or_404(guest_id, sender), sender)
+
+
+def delete_guest(guest, sender=None):
+    close_pending(guest)
+    guest.deleted_at = now()
+    activity(guest, sender, "deleted")
+    db.session.commit()
+    flash(f"{guest.full_name} הוסר מהרשימה. אפשר לשחזר דרך ׳מוזמנים שנמחקו׳.", "success")
+    return redirect(index_url(sender))
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/delete")
+def admin_delete_guest(guest_id):
+    require_admin()
+    return delete_guest(guest_or_404(guest_id))
+
+
+@invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/delete")
+def user_delete_guest(token, guest_id):
+    sender = sender_for_token(token)
+    return delete_guest(guest_or_404(guest_id, sender), sender)
+
+
+def trash_page(sender=None):
+    query = db.select(InvitationPortalGuest).where(InvitationPortalGuest.deleted_at.is_not(None))
+    if sender:
+        query = query.where(InvitationPortalGuest.side == sender.side)
+    return render_template(
+        "invite_portal/trash.html",
+        sender=sender,
+        admin=sender is None,
+        guests=db.session.scalars(query.order_by(InvitationPortalGuest.deleted_at.desc())).all(),
+    )
+
+
+@invite_portal_bp.get("/admin/trash")
+def admin_trash():
+    require_admin()
+    return trash_page()
+
+
+@invite_portal_bp.get("/u/<token>/trash")
+def user_trash(token):
+    return trash_page(sender_for_token(token))
+
+
+def restore_guest(guest, sender=None):
+    guest.deleted_at = None
+    activity(guest, sender, "restored")
+    db.session.commit()
+    flash(f"{guest.full_name} שוחזר לרשימה.", "success")
+    return redirect(index_url(sender))
+
+
+@invite_portal_bp.post("/admin/guest/<int:guest_id>/restore")
+def admin_restore_guest(guest_id):
+    require_admin()
+    return restore_guest(guest_or_404(guest_id, include_deleted=True))
+
+
+@invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/restore")
+def user_restore_guest(token, guest_id):
+    sender = sender_for_token(token)
+    return restore_guest(guest_or_404(guest_id, sender, include_deleted=True), sender)
+
+
 def change_status(guest, sender=None):
     status = request.form.get("status")
     if status not in STATUS_LABELS:
         abort(400, description="סטטוס לא תקין.")
+    if status in {"preparing", "sent"}:
+        require_invited(guest)
     invalidate_attempts(guest.id)
     guest.status = status
     guest.sent_at = now() if status == "sent" else None
@@ -442,6 +562,7 @@ def send_actor(token=None):
 def prepare(guest_id, token=None):
     actor_sender, actor_admin = send_actor(token)
     guest = guest_or_404(guest_id, actor_sender)
+    require_invited(guest)
     item = settings()
     if (
         not item.image_filename
@@ -471,6 +592,8 @@ def prepare(guest_id, token=None):
             .where(
                 InvitationPortalGuest.id == guest.id,
                 InvitationPortalGuest.updated_at == guest.updated_at,
+                InvitationPortalGuest.deleted_at.is_(None),
+                InvitationPortalGuest.invitation_decision == "invited",
             )
             .values(status="preparing", updated_at=now()),
             execution_options={"synchronize_session": False},
@@ -511,6 +634,8 @@ def confirm(guest_id, token=None):
     decision = request.form.get("sent")
     if decision not in {"true", "false"}:
         abort(400, description="יש לבחור נשלח או ביטול.")
+    if decision == "true":
+        require_invited(guest)
     attempt = db.session.get(InvitationSendAttempt, request.form.get("attempt", ""))
     if not attempt or attempt.guest_id != guest.id:
         abort(400, description="לא נמצא ניסיון שליחה. פתחו מחדש את ההזמנה.")

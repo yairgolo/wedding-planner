@@ -9,6 +9,7 @@
 <label>{{ form.phone.label }}{{ form.phone(inputmode="tel", dir="ltr", placeholder="0501234567") }}<small>לא חובה — אפשר לבחור את הנמען ב־WhatsApp.</small></label>
 {% if admin %}<label>{{ form.side.label }}{{ form.side() }}</label>{% else %}<input type="hidden" name="side" value="{{ sender.side }}">{% endif %}
 <label>{{ form.salutation.label }}{{ form.salutation(required=true) }}</label>
+<label>{{ form.invitation_decision.label }}{{ form.invitation_decision() }}<small>בסימן שאלה — לא ניתן לשלוח הזמנה עד לשינוי ההחלטה.</small></label>
 <label>{{ form.group_name.label }}{{ form.group_name(placeholder="משפחה / חברים / עבודה") }}</label>
 <label class="wide">{{ form.notes.label }}{{ form.notes(rows=3) }}</label>
 <div class="button-row wide">{{ form.submit(class_="button primary") }}<a class="button" href="{{ home_url }}">ביטול</a></div>

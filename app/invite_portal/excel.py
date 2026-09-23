@@ -14,10 +14,12 @@ from app.extensions import db
 from app.models import InvitationPortalGuest
 
 from .routes import (
+    DECISION_LABELS,
     SALUTATION_LABELS,
     SIDE_LABELS,
     STATUS_LABELS,
     clean_phone,
+    close_pending,
     index_url,
     invalidate_attempts,
     invite_portal_bp,
@@ -39,6 +41,7 @@ HEADERS = [
     "נשלח בתאריך",
     "ניסיונות",
     "הערה",
+    "החלטת הזמנה",
 ]
 
 
@@ -54,7 +57,11 @@ def export(sender=None):
     sheet.sheet_view.rightToLeft = True
     sheet.freeze_panes = "C2"
     sheet.append(HEADERS)
-    query = db.select(InvitationPortalGuest).order_by(InvitationPortalGuest.id)
+    query = (
+        db.select(InvitationPortalGuest)
+        .where(InvitationPortalGuest.deleted_at.is_(None))
+        .order_by(InvitationPortalGuest.id)
+    )
     if sender:
         query = query.where(InvitationPortalGuest.side == sender.side)
     for guest in db.session.scalars(query):
@@ -72,6 +79,7 @@ def export(sender=None):
                 guest.sent_at.strftime("%d/%m/%Y %H:%M") if guest.sent_at else "",
                 guest.attempts,
                 guest.notes or "",
+                DECISION_LABELS[guest.invitation_decision],
             ]
         )
     for row in sheet:
@@ -84,7 +92,7 @@ def export(sender=None):
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="334B60")
     for letter, width in zip(
-        "ABCDEFGHIJKL", [38, 25, 22, 20, 14, 16, 22, 18, 22, 24, 14, 40], strict=True
+        "ABCDEFGHIJKLM", [38, 25, 22, 20, 14, 16, 22, 18, 22, 24, 14, 40, 22], strict=True
     ):
         sheet.column_dimensions[letter].width = width
     for col, labels in (("E", SIDE_LABELS), ("F", SALUTATION_LABELS), ("H", STATUS_LABELS)):
@@ -97,6 +105,12 @@ def export(sender=None):
         validation.add(f"{col}2:{col}5001")
     sheet.auto_filter.ref = sheet.dimensions
     guide = workbook.create_sheet("הנחיות")
+    for index, label in enumerate(DECISION_LABELS.values(), 1):
+        guide.cell(index, 3, label)
+    decision_validation = DataValidation(type="list", formula1="'הנחיות'!$C$1:$C$2")
+    decision_validation.showErrorMessage = True
+    sheet.add_data_validation(decision_validation)
+    decision_validation.add("M2:M5001")
     guide.sheet_view.rightToLeft = True
     guide.column_dimensions["A"].width = 110
     for text in [
@@ -108,6 +122,9 @@ def export(sender=None):
         "סטטוס ריק משאיר את הסטטוס הקיים. שינוי סטטוס סוגר ניסיון שליחה פתוח.",
         "שורה חסרה בקובץ אינה מוחקת מוזמן. הייבוא מוגבל ל־5,000 שורות.",
         "כאשר יש שגיאות לא נשמר אף שינוי; מתקנים ומעלים שוב.",
+        "החלטת הזמנה: כן, מזמינים או בסימן שאלה. בסימן שאלה השליחה חסומה.",
+        "החלטה ריקה משאירה את ההחלטה הקיימת. מוזמן חדש מוגדר כן, מזמינים.",
+        "מוזמן שנמחק אינו מיוצא; לשחזור משתמשים בעמוד מוזמנים שנמחקו באתר.",
     ]:
         guide.append([text])
     data = BytesIO()
@@ -182,15 +199,29 @@ def import_file(sender=None):
                     if status_raw
                     else (guest.status if guest else "unsent")
                 )
+                decision_raw = str(row.get("החלטת הזמנה") or "").strip()
+                decision = (
+                    enum_value(decision_raw, DECISION_LABELS)
+                    if decision_raw
+                    else (guest.invitation_decision if guest else "invited")
+                )
                 error = None
                 if identifier and (not guest or identifier in seen):
                     error = "מזהה לא מוכר או כפול בקובץ. לשורה חדשה יש להשאיר מזהה ריק."
                 elif sender and (side != sender.side or (guest and guest.side != sender.side)):
                     error = "אפשר לייבא ולעדכן רק מוזמנים מהצד שלך."
+                elif guest and guest.deleted_at:
+                    error = "המוזמן נמחק. יש לשחזר אותו באתר לפני עדכון דרך Excel."
                 elif not first or len(first) > 120:
                     error = "חסר שם פרטי או שהשם ארוך מדי."
-                elif not side or not salutation or not status:
-                    error = "יש לבחור צד, צורת פנייה וסטטוס תקינים."
+                elif not side or not salutation or not status or not decision:
+                    error = "יש לבחור צד, צורת פנייה, סטטוס והחלטת הזמנה תקינים."
+                elif (
+                    decision == "undecided"
+                    and status in {"preparing", "sent"}
+                    and (not guest or status != guest.status)
+                ):
+                    error = "מוזמן בסימן שאלה אינו יכול לעבור לבטיפול או לנשלח."
                 if error:
                     errors.append(f"שורה {number}: {error}")
                     continue
@@ -206,6 +237,7 @@ def import_file(sender=None):
                             salutation=salutation,
                             group_name=str(row.get("קבוצה") or "").strip()[:120],
                             status=status,
+                            invitation_decision=decision,
                             notes=str(row.get("הערה") or "").strip(),
                         ),
                     )
@@ -230,7 +262,12 @@ def import_file(sender=None):
     for guest, values in changes:
         if guest:
             updated += 1
-            invalidate_attempts(guest.id)
+            if values["invitation_decision"] == "undecided":
+                close_pending(guest)
+                if values["status"] == "preparing":
+                    values["status"] = guest.status
+            else:
+                invalidate_attempts(guest.id)
             if values["status"] != guest.status:
                 guest.sent_at = now() if values["status"] == "sent" else None
                 guest.last_sender_id = None

@@ -1,0 +1,13 @@
+{% extends "invite_portal/base.html" %}
+{% block content %}
+<a class="back-link" href="{{ home_url }}">→ חזרה למוזמנים</a>
+<section class="page-heading"><h1>מוזמנים שנמחקו</h1><p>המוזמנים כאן לא מופיעים ברשימה או בייצוא, ואי אפשר לשלוח להם הזמנות. אפשר לשחזר מחיקה בטעות.</p></section>
+<div class="guest-list">
+{% for guest in guests %}
+  <article class="guest" data-guest-row="{{ guest.id }}">
+    <div><h3>{{ guest.full_name }}</h3><p>{{ decision_labels[guest.invitation_decision] }} · {{ status_labels[guest.status] }}</p></div>
+    <form method="post" action="{{ url_for('invite_portal.admin_restore_guest', guest_id=guest.id) if admin else url_for('invite_portal.user_restore_guest', token=sender.access_token, guest_id=guest.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button">שחזור מוזמן</button></form>
+  </article>
+{% else %}<div class="empty">אין מוזמנים שנמחקו.</div>{% endfor %}
+</div>
+{% endblock %}

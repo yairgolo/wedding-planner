@@ -55,6 +55,10 @@ class InvitationPortalGuest(db.Model):
     salutation = db.Column(db.String(10), nullable=False, index=True)
     group_name = db.Column(db.String(120), nullable=True, index=True)
     status = db.Column(db.String(20), nullable=False, default="unsent", index=True)
+    invitation_decision = db.Column(
+        db.String(20), nullable=False, default="invited", server_default="invited"
+    )
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     last_sender_id = db.Column(db.Integer, db.ForeignKey("invitation_senders.id"), nullable=True)
     sent_at = db.Column(db.DateTime(timezone=True), nullable=True)
     attempts = db.Column(db.Integer, nullable=False, default=0)
