@@ -6,6 +6,12 @@ from .family import Family
 from .gift import Gift
 from .guest import Guest
 from .invitation import InvitationActivity, InvitationSettings
+from .invitation_portal import (
+    InvitationPortalActivity,
+    InvitationPortalGuest,
+    InvitationPortalSettings,
+    InvitationSender,
+)
 from .seating import SeatingAssignment, SeatingTable
 from .shopping import ShoppingItem
 from .task import Task
@@ -23,6 +29,10 @@ __all__ = [
     "EventScheduleItem",
     "InvitationActivity",
     "InvitationSettings",
+    "InvitationPortalActivity",
+    "InvitationPortalGuest",
+    "InvitationPortalSettings",
+    "InvitationSender",
     "MusicRequest",
     "SeatingAssignment",
     "SeatingTable",

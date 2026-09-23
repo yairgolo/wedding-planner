@@ -64,6 +64,7 @@ def create_app(config_name: str | None = None) -> Flask:
     from .guests.routes import guests_bp, rsvp_bp
     from .imports.routes import imports_bp
     from .invitations.routes import invitations_bp
+    from .invite_portal.routes import invite_portal_bp
     from .notifications.routes import notifications_bp
     from .search.routes import search_bp
     from .seating.routes import seating_bp
@@ -78,6 +79,7 @@ def create_app(config_name: str | None = None) -> Flask:
     app.register_blueprint(guests_bp)
     app.register_blueprint(rsvp_bp)
     app.register_blueprint(invitations_bp)
+    app.register_blueprint(invite_portal_bp)
     app.register_blueprint(seating_bp)
     app.register_blueprint(shopping_bp)
     app.register_blueprint(budget_bp)
@@ -105,6 +107,10 @@ def create_app(config_name: str | None = None) -> Flask:
         Gift,
         Guest,
         InvitationActivity,
+        InvitationPortalActivity,
+        InvitationPortalGuest,
+        InvitationPortalSettings,
+        InvitationSender,
         InvitationSettings,
         MusicRequest,
         SeatingAssignment,

@@ -1,0 +1,1 @@
+"""Standalone invitation sending portal."""
