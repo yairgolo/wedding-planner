@@ -536,4 +536,27 @@ def test_template_substitution_is_literal_and_escaped_in_html(client, portal):
 def test_privacy_headers(client, portal):
     response = client.get(ROOT + "/u/groom-token")
     assert response.headers["Cache-Control"] == "no-store"
-    assert response.headers["Referrer-Policy"] == "no-referrer"
+    assert response.headers["Referrer-Policy"] == "same-origin"
+    assert b'<meta name="referrer" content="same-origin">' in response.data
+
+
+@pytest.mark.parametrize("operation", ["prepare", "edit"])
+def test_https_csrf_requires_same_origin_referrer(client, portal, operation):
+    import re
+
+    portal.config.update(WTF_CSRF_ENABLED=True, WTF_CSRF_SSL_STRICT=True)
+    origin = "https://portal.example.test"
+    page = ROOT + "/u/groom-token"
+    html = client.get(page, base_url=origin).data.decode()
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', html).group(1)
+    path = page + "/guest/1/" + operation
+    data = {"csrf_token": csrf}
+    if operation == "edit":
+        data.update(first_name="משה", side="groom", salutation="male", phone="0501234567")
+    missing = client.post(path, base_url=origin, data=data)
+    assert missing.status_code == 400
+    assert b"referrer header is missing" in missing.data
+    foreign = client.post(path, base_url=origin, data=data, headers={"Referer": "https://other.test/"})
+    assert foreign.status_code == 400
+    good = client.post(path, base_url=origin, data=data, headers={"Referer": origin + page})
+    assert good.status_code == (200 if operation == "prepare" else 302)

@@ -138,12 +138,17 @@ PYTHONPATH=. python tests/portal_preview.py
 
 ```bash
 node tests/portal_browser.cjs
+node tests/portal_browser_https.cjs
 ```
 
 הבדיקה משתמשת ב־Edge מותקן כברירת מחדל. אפשר לבחור Chrome באמצעות
 `PORTAL_BROWSER_CHANNEL=chrome`. היא בודקת רוחבי טלפון ומחשב, לחיצות, שיתוף
 מדומה ושגיאות דפדפן. היא אינה שולחת הודעות אמיתיות. חובה לבצע בדיקת קצה בטלפון
 של השולח כדי לוודא שגרסת WhatsApp שלו מקבלת את התמונה והטקסט יחד.
+
+בדיקת HTTPS מפעילה את יצירת כותרת Referer בדפדפן ומעבירה את הבקשות לשרת
+הבדיקה המקומי דרך כותרות reverse proxy. היא מכסה כניסה, עריכה ושליחה עם
+CSRF פעיל, ומוודאת שקישור אישי אינו מועבר לאתר חיצוני. אין תקשורת לדומייני הבדיקה.
 
 ## Sprint 6 — Vendors & Tasks
 

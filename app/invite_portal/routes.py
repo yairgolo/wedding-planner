@@ -149,7 +149,8 @@ def portal_error(error):
 @invite_portal_bp.after_request
 def private_response(response):
     response.headers["Cache-Control"] = "no-store"
-    response.headers["Referrer-Policy"] = "no-referrer"
+    # HTTPS CSRF validation needs a same-origin Referer. Never expose token URLs externally.
+    response.headers["Referrer-Policy"] = "same-origin"
     return response
 
 
