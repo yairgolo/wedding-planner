@@ -28,6 +28,38 @@
       if (!window.confirm(form.dataset.confirmPrompt)) event.preventDefault();
     });
   });
+  const bulkForm = document.querySelector("[data-bulk-delete]");
+  if (bulkForm) {
+    const guestChecks = [...document.querySelectorAll("[data-guest-select]")];
+    const selectVisible = bulkForm.querySelector("[data-select-visible]");
+    const selectionCount = bulkForm.querySelector("[data-selection-count]");
+    const refreshSelection = () => {
+      const count = guestChecks.filter(item => item.checked).length;
+      selectionCount.textContent = count ? `סומנו ${count} מוזמנים` : "לא סומנו מוזמנים";
+      selectVisible.checked = count > 0 && count === guestChecks.length;
+      selectVisible.indeterminate = count > 0 && count < guestChecks.length;
+    };
+    selectVisible.addEventListener("change", () => {
+      guestChecks.forEach(item => { item.checked = selectVisible.checked; });
+      refreshSelection();
+    });
+    guestChecks.forEach(item => item.addEventListener("change", refreshSelection));
+    bulkForm.addEventListener("submit", event => {
+      const mode = event.submitter?.value;
+      const selected = guestChecks.filter(item => item.checked).length;
+      if (mode === "selected" && !selected) {
+        event.preventDefault();
+        toast("יש לסמן לפחות מוזמן אחד.");
+        return;
+      }
+      const description = mode === "all"
+        ? "את כל המוזמנים באתר"
+        : mode === "filtered" ? "את כל המוזמנים בתוצאות הסינון" : `${selected} מוזמנים שסומנו`;
+      if (!window.confirm(`להעביר ${description} לרשימת המחוקים? ניתן יהיה לשחזר אותם.`)) {
+        event.preventDefault();
+      }
+    });
+  }
 
   const configElement = document.querySelector("#portalConfig");
   if (!configElement) return;

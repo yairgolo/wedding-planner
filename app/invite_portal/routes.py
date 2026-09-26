@@ -201,12 +201,9 @@ def home():
     return redirect(url_for("invite_portal.admin_index"))
 
 
-def dashboard(sender=None):
-    scope = db.select(InvitationPortalGuest).where(InvitationPortalGuest.deleted_at.is_(None))
-    if sender:
-        scope = scope.where(InvitationPortalGuest.side == sender.side)
-    all_guests = db.session.scalars(scope).all()
-    query = request.args.get("q", "").strip()
+def apply_guest_filters(scope, values):
+    """Apply the dashboard filters to a guest query."""
+    query = values.get("q", "").strip()
     if query:
         like = f"%{query}%"
         scope = scope.where(
@@ -221,12 +218,21 @@ def dashboard(sender=None):
         ("side", SIDE_LABELS),
         ("invitation_decision", DECISION_LABELS),
     ):
-        value = request.args.get(field, "")
+        value = values.get(field, "")
         if value in allowed:
             scope = scope.where(getattr(InvitationPortalGuest, field) == value)
-    group = request.args.get("group", "")
+    group = values.get("group", "")
     if group:
         scope = scope.where(InvitationPortalGuest.group_name == group)
+    return scope
+
+
+def dashboard(sender=None):
+    scope = db.select(InvitationPortalGuest).where(InvitationPortalGuest.deleted_at.is_(None))
+    if sender:
+        scope = scope.where(InvitationPortalGuest.side == sender.side)
+    all_guests = db.session.scalars(scope).all()
+    scope = apply_guest_filters(scope, request.args)
     return render_template(
         "invite_portal/dashboard.html",
         admin=sender is None,
@@ -379,6 +385,49 @@ def delete_guest(guest, sender=None):
 def admin_delete_guest(guest_id):
     require_admin()
     return delete_guest(guest_or_404(guest_id))
+
+
+@invite_portal_bp.post("/admin/guests/delete")
+def admin_bulk_delete_guests():
+    require_admin()
+    mode = request.form.get("mode")
+    scope = db.select(InvitationPortalGuest).where(InvitationPortalGuest.deleted_at.is_(None))
+    if mode == "selected":
+        try:
+            guest_ids = {int(value) for value in request.form.getlist("guest_ids")}
+        except ValueError:
+            abort(400, description="רשימת המוזמנים שסומנו אינה תקינה.")
+        if not guest_ids:
+            flash("לא סומנו מוזמנים למחיקה.", "warning")
+            return redirect(url_for("invite_portal.admin_index"))
+        scope = scope.where(InvitationPortalGuest.id.in_(guest_ids))
+    elif mode == "filtered":
+        has_effective_filter = any(
+            (
+                request.form.get("q", "").strip(),
+                request.form.get("group", "").strip(),
+                request.form.get("status", "") in STATUS_LABELS,
+                request.form.get("side", "") in SIDE_LABELS,
+                request.form.get("invitation_decision", "") in DECISION_LABELS,
+            )
+        )
+        if not has_effective_filter:
+            abort(400, description="יש לבחור סינון לפני מחיקת תוצאות מסוננות.")
+        scope = apply_guest_filters(scope, request.form)
+    elif mode != "all":
+        abort(400, description="פעולת המחיקה אינה תקינה.")
+
+    guests = db.session.scalars(scope).all()
+    for guest in guests:
+        close_pending(guest)
+        guest.deleted_at = now()
+        activity(guest, None, "deleted")
+    db.session.commit()
+    flash(
+        f"{len(guests)} מוזמנים הועברו למוזמנים שנמחקו וניתנים לשחזור.",
+        "success",
+    )
+    return redirect(url_for("invite_portal.admin_index"))
 
 
 @invite_portal_bp.post("/u/<token>/guest/<int:guest_id>/delete")

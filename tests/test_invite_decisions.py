@@ -161,3 +161,93 @@ def test_init_db_upgrades_existing_guests_idempotently(portal):
         assert guest.first_name == "משה"
         assert guest.invitation_decision == "invited"
         assert guest.deleted_at is None
+
+
+def active_guest_ids(portal):
+    with portal.app_context():
+        return set(
+            db.session.scalars(
+                db.select(InvitationPortalGuest.id).where(
+                    InvitationPortalGuest.deleted_at.is_(None)
+                )
+            )
+        )
+
+
+def test_admin_bulk_deletes_only_selected_guests(admin, portal):
+    response = admin.post(
+        ROOT + "/admin/guests/delete", data={"mode": "selected", "guest_ids": ["1", "3"]}
+    )
+    assert response.status_code == 302
+    assert active_guest_ids(portal) == {2}
+    assert "2 מוזמנים" in admin.get(ROOT + "/admin").text
+    trash = admin.get(ROOT + "/admin/trash").text
+    assert 'data-guest-row="1"' in trash
+    assert 'data-guest-row="3"' in trash
+
+
+def test_admin_bulk_delete_by_group_filter(admin, portal):
+    response = admin.post(
+        ROOT + "/admin/guests/delete", data={"mode": "filtered", "group": "חברים"}
+    )
+    assert response.status_code == 302
+    assert active_guest_ids(portal) == {2, 3}
+
+
+def test_admin_bulk_delete_combines_dashboard_filters(admin, portal):
+    response = admin.post(
+        ROOT + "/admin/guests/delete", data={"mode": "filtered", "side": "groom", "q": "הילה"}
+    )
+    assert response.status_code == 302
+    assert active_guest_ids(portal) == {1, 2}
+
+
+def test_admin_bulk_delete_all_is_recoverable_and_closes_attempt(admin, portal):
+    attempt = prepare(admin, prefix="/admin").json["attempt"]
+    response = admin.post(ROOT + "/admin/guests/delete", data={"mode": "all"})
+    assert response.status_code == 302
+    assert active_guest_ids(portal) == set()
+    assert finish(admin, attempt, prefix="/admin").status_code == 404
+    assert admin.post(ROOT + "/admin/guest/1/restore").status_code == 302
+    assert active_guest_ids(portal) == {1}
+    assert row(portal)[0] == "unsent"
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"mode": "selected"},
+        {"mode": "selected", "guest_ids": "not-a-number"},
+        {"mode": "filtered"},
+        {"mode": "filtered", "status": "invalid"},
+        {"mode": "unknown"},
+    ],
+)
+def test_bulk_delete_rejects_empty_or_invalid_scope(admin, portal, data):
+    response = admin.post(ROOT + "/admin/guests/delete", data=data)
+    assert response.status_code in {302, 400}
+    assert active_guest_ids(portal) == {1, 2, 3}
+
+
+def test_bulk_delete_is_admin_only_and_csrf_protected(client, portal):
+    assert client.post(
+        ROOT + "/admin/guests/delete", data={"mode": "all"}, headers={"Accept": "application/json"}
+    ).status_code == 401
+    assert (
+        client.post(ROOT + "/u/groom-token/guests/delete", data={"mode": "all"}).status_code == 404
+    )
+    portal.config["WTF_CSRF_ENABLED"] = True
+    client.post(
+        ROOT + "/admin/login", data={"email": "admin@example.com", "password": "password123"}
+    )
+    assert client.post(ROOT + "/admin/guests/delete", data={"mode": "all"}).status_code == 400
+    assert active_guest_ids(portal) == {1, 2, 3}
+
+
+def test_bulk_controls_are_admin_only(admin, portal):
+    dashboard = admin.get(ROOT + "/admin").text
+    assert 'id="bulkDeleteForm"' in dashboard
+    assert dashboard.count("data-guest-select") == 3
+    sender_dashboard = admin.get(ROOT + "/u/groom-token").text
+    assert 'id="bulkDeleteForm"' not in sender_dashboard
+    assert "data-guest-select" not in sender_dashboard
